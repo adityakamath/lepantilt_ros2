@@ -1,0 +1,50 @@
+controller_manager:
+  ros__parameters:
+    update_rate: 50  # Hz
+    statistics_publish_rate: 0.0
+    enforce_command_limits: true
+    handle_exceptions: true
+
+    joint_state_broadcaster:
+      type: joint_state_broadcaster/JointStateBroadcaster
+
+    lepantilt_controller:
+      type: joint_trajectory_controller/JointTrajectoryController
+
+joint_state_broadcaster:
+  ros__parameters:
+    joints:
+      - pan_joint
+      - tilt_joint
+    interfaces:
+      - position
+      - velocity
+      - effort
+      - voltage
+      - temperature
+      - current
+      - is_moving
+
+lepantilt_controller:
+  ros__parameters:
+    joints:
+      - pan_joint
+      - tilt_joint
+    command_interfaces:
+      - position
+    state_interfaces:
+      - position
+    state_publish_rate: 50.0
+    action_monitor_rate: 20.0
+    constraints:
+      goal_time: 0.5
+      stopped_velocity_tolerance: 0.01
+      pan_joint:
+        trajectory: 0.05
+        goal: 0.01
+      tilt_joint:
+        trajectory: 0.05
+        goal: 0.01
+    allow_partial_joints_goal: false
+    open_loop_control: false
+    require_tolerance_from_action: true

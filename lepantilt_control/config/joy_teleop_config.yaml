@@ -1,0 +1,23 @@
+joy_teleop:
+  ros__parameters:
+    pan_tilt:
+      type: topic
+      interface_type: trajectory_msgs/msg/JointTrajectory
+      topic_name: /lepantilt_controller/joint_trajectory
+      message_value:
+        joint_names:
+          value: ["pan_joint", "tilt_joint"]
+        points:
+          value:
+            - time_from_start:
+                sec: 0
+                nanosec: 100000000
+      axis_mappings:
+        points.0.positions.0:
+          axis: 0
+          scale: -1.5708
+          offset: 3.1416
+        points.0.positions.1:
+          axis: 1
+          scale: -1.5708
+          offset: 3.1416
