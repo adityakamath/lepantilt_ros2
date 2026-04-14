@@ -48,17 +48,9 @@ def generate_launch_description():
             description="Enable SyncWrite for coordinated motion",
         )
     )
-    declared_arguments.append(
-        DeclareLaunchArgument(
-            "tilt",
-            default_value="s2",
-            description="Tilt link mesh variant: s2 or lite",
-        )
-    )
     serial_port = LaunchConfiguration("serial_port")
     use_mock = LaunchConfiguration("use_mock")
     use_sync_write = LaunchConfiguration("use_sync_write")
-    tilt = LaunchConfiguration("tilt")
 
     robot_description_content = Command(
         [
@@ -80,9 +72,6 @@ def generate_launch_description():
             " ",
             "use_sync_write:=",
             use_sync_write,
-            " ",
-            "tilt:=",
-            tilt,
         ]
     )
     robot_description = {

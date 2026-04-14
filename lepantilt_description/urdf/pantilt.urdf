@@ -78,14 +78,14 @@
     <visual>
       <origin rpy="1.5707963268 -1.5707963268 0" xyz="0.119 0.0758 -0.0002"/>
       <geometry>
-        <mesh filename="../meshes/tilt_joint_s2.stl"/>
+        <mesh filename="../meshes/tilt_joint_lite.stl"/>
       </geometry>
       <material name="light_grey"/>
     </visual>
     <collision>
       <origin rpy="1.5707963268 -1.5707963268 0" xyz="0.119 0.0758 -0.0002"/>
       <geometry>
-        <mesh filename="../meshes/tilt_joint_s2.stl"/>
+        <mesh filename="../meshes/tilt_joint_lite.stl"/>
       </geometry>
     </collision>
   </link>
@@ -110,8 +110,89 @@
     <child link="tilt_link"/>
     <origin rpy="-1.5707963268 1.5707963268 0" xyz="0.0306 0 0.1025"/>
     <axis xyz="0 0 1"/>
-    <limit effort="2.942" lower="-1.5707963268" upper="2.0" velocity="5.21553467881118"/>
+    <limit effort="2.942" lower="-1.5707963268" upper="1.5707963268" velocity="5.21553467881118"/>
   </joint>
+  <!-- OAK-D-S2 camera (fixed to tilt_link) -->
+  <link name="oak"/>
+
+  <joint name="oak_mount_joint" type="fixed">
+    <parent link="tilt_link"/>
+    <child link="oak"/>
+    <origin xyz="-0.03435 -0.01 0.0" rpy="-1.5707963267948966 0.0 -1.5707963267948966"/>
+  </joint>
+
+  <link name="oak_model_origin">
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="../meshes/oak_d_s2.stl"/>
+      </geometry>
+      <material name="charcoal"/>
+    </visual>
+  </link>
+
+  <joint name="oak_model_origin_joint" type="fixed">
+    <parent link="oak"/>
+    <child link="oak_model_origin"/>
+    <origin xyz="0 0 0" rpy="1.5707963267948966 0 1.5707963267948966"/>
+  </joint>
+
+  <link name="oak_rgb_camera_frame"/>
+
+  <joint name="oak_rgb_camera_joint" type="fixed">
+    <parent link="oak"/>
+    <child link="oak_rgb_camera_frame"/>
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+  </joint>
+
+  <link name="oak_rgb_camera_optical_frame"/>
+
+  <joint name="oak_rgb_camera_optical_joint" type="fixed">
+    <parent link="oak_rgb_camera_frame"/>
+    <child link="oak_rgb_camera_optical_frame"/>
+    <origin xyz="0 0 0" rpy="-1.5707963267948966 0.0 -1.5707963267948966"/>
+  </joint>
+
+  <link name="oak_left_camera_frame"/>
+
+  <joint name="oak_left_camera_joint" type="fixed">
+    <parent link="oak"/>
+    <child link="oak_left_camera_frame"/>
+    <origin xyz="0 0.0375 0" rpy="0 0 0"/>
+  </joint>
+
+  <link name="oak_left_camera_optical_frame"/>
+
+  <joint name="oak_left_camera_optical_joint" type="fixed">
+    <parent link="oak_left_camera_frame"/>
+    <child link="oak_left_camera_optical_frame"/>
+    <origin xyz="0 0 0" rpy="-1.5707963267948966 0.0 -1.5707963267948966"/>
+  </joint>
+
+  <link name="oak_right_camera_frame"/>
+
+  <joint name="oak_right_camera_joint" type="fixed">
+    <parent link="oak"/>
+    <child link="oak_right_camera_frame"/>
+    <origin xyz="0 -0.0375 0" rpy="0 0 0"/>
+  </joint>
+
+  <link name="oak_right_camera_optical_frame"/>
+
+  <joint name="oak_right_camera_optical_joint" type="fixed">
+    <parent link="oak_right_camera_frame"/>
+    <child link="oak_right_camera_optical_frame"/>
+    <origin xyz="0 0 0" rpy="-1.5707963267948966 0.0 -1.5707963267948966"/>
+  </joint>
+
+  <link name="oak_imu_frame"/>
+
+  <joint name="oak_imu_joint" type="fixed">
+    <parent link="oak"/>
+    <child link="oak_imu_frame"/>
+    <origin xyz="-0.008 -0.037945 -0.00079" rpy="3.1415926535897932 1.5707963267948966 0.0"/>
+  </joint>
+
   <!-- ROS 2 CONTROL -->
   <ros2_control name="lepantilt_control" type="system">
     <hardware>

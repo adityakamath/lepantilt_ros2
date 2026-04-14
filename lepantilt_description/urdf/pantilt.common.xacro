@@ -31,4 +31,12 @@
   <xacro:property name="tilt_visual_y" value="${pan_joint_x + tilt_joint_x}"/>
   <xacro:property name="tilt_visual_z" value="-0.0002"/>
 
+  <!-- OAK-D-S2 camera mount offset (in tilt_link frame) -->
+  <xacro:property name="oak_pos_x" value="-0.03435"/>
+  <xacro:property name="oak_pos_y" value="-0.01"/>
+
+  <!-- OAK-D-S2 camera mount orientation (in tilt_link frame) -->
+  <xacro:property name="oak_roll" value="${-pi/2}"/>
+  <xacro:property name="oak_yaw"  value="${-pi/2}"/>
+
 </robot>
