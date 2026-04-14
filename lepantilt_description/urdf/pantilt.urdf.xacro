@@ -130,10 +130,10 @@
     <limit lower="${tilt_joint_lower}" upper="${tilt_joint_upper}" effort="${max_torque_nm}" velocity="${max_velocity_rads}"/>
   </joint>
 
-  <!-- OAK-D-S2 camera (fixed to tilt_link via depthai_descriptions macro) -->
+  <!-- OAK-D-LITE camera (fixed to tilt_link via depthai_descriptions macro) -->
   <xacro:depthai_camera
     camera_name="oak"
-    camera_model="OAK-D-S2"
+    camera_model="OAK-D-LITE"
     base_frame="oak"
     parent="tilt_link"
     cam_pos_x="${oak_pos_x}" cam_pos_y="${oak_pos_y}" cam_pos_z="0"
