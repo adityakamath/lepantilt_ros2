@@ -78,14 +78,14 @@
     <visual>
       <origin rpy="1.5707963268 -1.5707963268 0" xyz="0.119 0.0758 -0.0002"/>
       <geometry>
-        <mesh filename="../meshes/tilt_joint_lite.stl"/>
+        <mesh filename="../meshes/tilt_joint.stl"/>
       </geometry>
       <material name="light_grey"/>
     </visual>
     <collision>
       <origin rpy="1.5707963268 -1.5707963268 0" xyz="0.119 0.0758 -0.0002"/>
       <geometry>
-        <mesh filename="../meshes/tilt_joint_lite.stl"/>
+        <mesh filename="../meshes/tilt_joint.stl"/>
       </geometry>
     </collision>
   </link>
@@ -125,7 +125,7 @@
     <visual>
       <origin xyz="0 0 0" rpy="0 0 0"/>
       <geometry>
-        <mesh filename="../meshes/oakd_lite.stl"/>
+        <mesh filename="../meshes/oak_d_s2.stl"/>
       </geometry>
       <material name="charcoal"/>
     </visual>

@@ -91,14 +91,14 @@
     <visual>
       <origin xyz="${tilt_visual_x} ${tilt_visual_y} ${tilt_visual_z}" rpy="${tilt_offset_rx} ${tilt_offset_ry} 0"/>
       <geometry>
-        <mesh filename="package://lepantilt_description/meshes/tilt_joint_lite.stl"/>
+        <mesh filename="package://lepantilt_description/meshes/tilt_joint.stl"/>
       </geometry>
       <material name="light_grey"/>
     </visual>
     <collision>
       <origin xyz="${tilt_visual_x} ${tilt_visual_y} ${tilt_visual_z}" rpy="${tilt_offset_rx} ${tilt_offset_ry} 0"/>
       <geometry>
-        <mesh filename="package://lepantilt_description/meshes/tilt_joint_lite.stl"/>
+        <mesh filename="package://lepantilt_description/meshes/tilt_joint.stl"/>
       </geometry>
     </collision>
   </link>
@@ -130,10 +130,10 @@
     <limit lower="${tilt_joint_lower}" upper="${tilt_joint_upper}" effort="${max_torque_nm}" velocity="${max_velocity_rads}"/>
   </joint>
 
-  <!-- OAK-D-LITE camera (fixed to tilt_link via depthai_descriptions macro) -->
+  <!-- OAK-D-S2 camera (fixed to tilt_link via depthai_descriptions macro) -->
   <xacro:depthai_camera
     camera_name="oak"
-    camera_model="OAK-D-LITE"
+    camera_model="OAK-D-S2"
     base_frame="oak"
     parent="tilt_link"
     cam_pos_x="${oak_pos_x}" cam_pos_y="${oak_pos_y}" cam_pos_z="0"
