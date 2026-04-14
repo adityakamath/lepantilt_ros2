@@ -12,7 +12,7 @@
   <xacro:property name="pan_offset_rx" value="${pi/2}"/>
   <xacro:property name="pan_offset_rz" value="${pi/2}"/>
 
-  <!-- Pan joint origin (in reoriented pantilt_base_link frame) -->
+  <!-- Pan joint origin (in reoriented base_link frame) -->
   <xacro:property name="pan_joint_x" value="0.0452"/>
   <xacro:property name="pan_joint_z" value="0.0165"/>
 

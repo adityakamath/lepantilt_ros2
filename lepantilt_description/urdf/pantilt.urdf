@@ -10,8 +10,10 @@
     <color rgba="0.15 0.15 0.15 1.0"/>
   </material>
   <!-- LINKS -->
-  <!-- Pantilt base link -->
-  <link name="pantilt_base_link">
+  <!-- Base footprint link (empty root — KDL does not support inertia on root link) -->
+  <link name="base_footprint"/>
+  <!-- Base link -->
+  <link name="base_link">
     <inertial>
       <mass value="1.0"/>
       <origin rpy="0 0 0" xyz="0 0 0"/>
@@ -88,9 +90,15 @@
     </collision>
   </link>
   <!-- JOINTS -->
+  <!-- base_footprint fixed joint -->
+  <joint name="base_footprint_joint" type="fixed">
+    <parent link="base_footprint"/>
+    <child link="base_link"/>
+    <origin rpy="0 0 0" xyz="0 0 0"/>
+  </joint>
   <!-- Pan joint (revolute) -->
   <joint name="pan_joint" type="revolute">
-    <parent link="pantilt_base_link"/>
+    <parent link="base_link"/>
     <child link="pan_link"/>
     <origin rpy="0 0 0" xyz="0.0452 0 0.0165"/>
     <axis xyz="0 0 1"/>

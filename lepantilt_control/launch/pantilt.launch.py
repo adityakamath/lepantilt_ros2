@@ -109,7 +109,6 @@ def generate_launch_description():
         parameters=[robot_description, controller_config],
         output="log",
         emulate_tty=True,
-        name="controller_manager",
     )
 
     joint_state_broadcaster_spawner = Node(

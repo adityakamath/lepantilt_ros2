@@ -20,8 +20,11 @@
 
   <!-- LINKS -->
 
-  <!-- Pantilt base link -->
-  <link name="pantilt_base_link">
+  <!-- Base footprint link (empty root — KDL does not support inertia on root link) -->
+  <link name="base_footprint"/>
+
+  <!-- Base link -->
+  <link name="base_link">
     <inertial>
       <mass value="1.0"/>
       <origin xyz="0 0 0" rpy="0 0 0"/>
@@ -102,9 +105,16 @@
 
   <!-- JOINTS -->
 
+  <!-- base_footprint fixed joint -->
+  <joint name="base_footprint_joint" type="fixed">
+    <parent link="base_footprint"/>
+    <child link="base_link"/>
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+  </joint>
+
   <!-- Pan joint (revolute) -->
   <joint name="pan_joint" type="revolute">
-    <parent link="pantilt_base_link"/>
+    <parent link="base_link"/>
     <child link="pan_link"/>
     <origin xyz="${pan_joint_x} 0 ${pan_joint_z}" rpy="0 0 0"/>
     <axis xyz="0 0 1"/>

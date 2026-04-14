@@ -23,6 +23,6 @@
   <xacro:property name="pan_joint_lower" value="-2"/>
   <xacro:property name="pan_joint_upper" value="2"/>
   <xacro:property name="tilt_joint_lower" value="${-pi/2}"/>
-  <xacro:property name="tilt_joint_upper" value="2"/>
+  <xacro:property name="tilt_joint_upper" value="${pi/2}"/>
 
 </robot>

@@ -11,19 +11,33 @@ controller_manager:
     lepantilt_controller:
       type: forward_command_controller/ForwardCommandController
 
+    # Override joint limits for the JointSaturationLimiter.
+    # ForwardCommandController sends absolute position targets, not trajectories, so
+    # velocity rate-limiting (computed as (command - actual) / dt) is inappropriate
+    # and generates spurious "out of limits" errors. Disable it here; position limits
+    # are still enforced. Hardware velocity limits are set via max_velocity in the URDF.
+    joint_limits:
+      pan_joint:
+        has_position_limits: true
+        min_position: -2.0    # rad — matches pantilt.control.xacro pan_joint_lower
+        max_position: 2.0     # rad — matches pantilt.control.xacro pan_joint_upper
+        has_velocity_limits: false
+        has_acceleration_limits: false
+      tilt_joint:
+        has_position_limits: true
+        min_position: -1.5708  # rad — -π/2, matches pantilt.control.xacro tilt_joint_lower
+        max_position: 1.5708   # rad — +π/2, matches pantilt.control.xacro tilt_joint_upper
+        has_velocity_limits: false
+        has_acceleration_limits: false
+
 joint_state_broadcaster:
   ros__parameters:
     joints:
       - pan_joint
       - tilt_joint
-    interfaces:
-      - position
-      - velocity
-      - effort
-      - voltage
-      - temperature
-      - current
-      - is_moving
+    # No `interfaces` needed: JSB publishes position/velocity/effort to /joint_states
+    # and extra state interfaces (voltage, temperature, etc.) to /dynamic_joint_states.
+
 
 lepantilt_controller:
   ros__parameters:
