@@ -125,7 +125,7 @@
     <visual>
       <origin xyz="0 0 0" rpy="0 0 0"/>
       <geometry>
-        <mesh filename="../meshes/oak_d_s2.stl"/>
+        <mesh filename="../meshes/oakd_lite.stl"/>
       </geometry>
       <material name="charcoal"/>
     </visual>
