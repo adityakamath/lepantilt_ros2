@@ -1,11 +1,11 @@
 <?xml version="1.0"?>
 <robot xmlns:xacro="http://www.ros.org/wiki/xacro">
 
-  <!-- Shared hardware interface parameters (single STS servo bus) -->
-  <xacro:property name="serial_port" default="/dev/ttySERVO"/>
-  <xacro:property name="baud_rate" default="1000000"/>
-  <xacro:property name="use_mock" default="false"/>
-  <xacro:property name="use_sync_write" default="true"/>
+  <!-- Arguments (externally settable via command line) -->
+  <xacro:arg name="serial_port"    default="/dev/ttySERVO"/>
+  <xacro:arg name="baud_rate"      default="1000000"/>
+  <xacro:arg name="use_mock"       default="false"/>
+  <xacro:arg name="use_sync_write" default="true"/>
 
   <!-- Pantilt motor IDs and mode -->
   <xacro:property name="pan_motor_id" value="1"/>
@@ -24,5 +24,56 @@
   <xacro:property name="pan_joint_upper" value="2"/>
   <xacro:property name="tilt_joint_lower" value="${-pi/2}"/>
   <xacro:property name="tilt_joint_upper" value="${pi/2}"/>
+
+  <!-- ROS 2 CONTROL -->
+  <ros2_control name="lepantilt_control" type="system">
+    <hardware>
+      <plugin>sts_hardware_interface/STSHardwareInterface</plugin>
+      <param name="serial_port">$(arg serial_port)</param>
+      <param name="baud_rate">$(arg baud_rate)</param>
+      <param name="communication_timeout_ms">100</param>
+      <param name="use_sync_write">$(arg use_sync_write)</param>
+      <param name="enable_mock_mode">$(arg use_mock)</param>
+      <param name="max_velocity_steps">${sts_max_velocity_steps}</param>
+      <param name="reset_states_on_activate">true</param>
+    </hardware>
+
+    <!-- Pan axis: rotates the payload around Z (Motor ID ${pan_motor_id}) -->
+    <joint name="pan_joint">
+      <param name="motor_id">${pan_motor_id}</param>
+      <param name="operating_mode">${pantilt_operating_mode}</param>
+      <param name="min_position">${pan_joint_lower}</param>
+      <param name="max_position">${pan_joint_upper}</param>
+      <param name="max_velocity">${max_velocity_rads}</param>
+      <param name="position_center_steps">2048</param>
+      <command_interface name="position"/>
+      <state_interface name="position"/>
+      <state_interface name="velocity"/>
+      <state_interface name="effort"/>
+      <state_interface name="voltage"/>
+      <state_interface name="temperature"/>
+      <state_interface name="current"/>
+      <state_interface name="is_moving"/>
+    </joint>
+
+    <!-- Tilt axis: rotates the payload around Y (Motor ID ${tilt_motor_id}) -->
+    <joint name="tilt_joint">
+      <param name="motor_id">${tilt_motor_id}</param>
+      <param name="operating_mode">${pantilt_operating_mode}</param>
+      <param name="min_position">${tilt_joint_lower}</param>
+      <param name="max_position">${tilt_joint_upper}</param>
+      <param name="max_velocity">${max_velocity_rads}</param>
+      <param name="position_center_steps">2048</param>
+      <command_interface name="position"/>
+      <state_interface name="position"/>
+      <state_interface name="velocity"/>
+      <state_interface name="effort"/>
+      <state_interface name="voltage"/>
+      <state_interface name="temperature"/>
+      <state_interface name="current"/>
+      <state_interface name="is_moving"/>
+    </joint>
+
+  </ros2_control>
 
 </robot>

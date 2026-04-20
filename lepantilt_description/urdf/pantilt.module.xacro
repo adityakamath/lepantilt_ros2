@@ -1,0 +1,147 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+  <!-- Pan-tilt module: mechanical parts only (no ros2_control)
+       Attach to parent platform (e.g., lekiwi base_link) at specified origin -->
+
+  <xacro:include filename="$(find lepantilt_description)/urdf/pantilt.common.xacro"/>
+  <!-- <xacro:include filename="$(find depthai_descriptions)/urdf/include/depthai_macro.urdf.xacro"/> -->
+
+  <xacro:macro name="lepantilt_module" params="parent *origin">
+
+    <!-- Material definitions (referenced by links below) -->
+    <material name="light_grey">
+      <color rgba="${light_grey_rgba}"/>
+    </material>
+    <material name="charcoal">
+      <color rgba="${charcoal_rgba}"/>
+    </material>
+
+    <!-- Mount pantilt_base_link to parent platform at specified origin -->
+    <joint name="pantilt_mount_joint" type="fixed">
+      <parent link="${parent}"/>
+      <child link="pantilt_base_link"/>
+      <xacro:insert_block name="origin"/>
+    </joint>
+
+    <!-- Pan-tilt base link (was "base_link" in standalone URDF) -->
+    <link name="pantilt_base_link">
+      <inertial>
+        <mass value="1.0"/>
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <inertia ixx="0.01" ixy="0" ixz="0" iyy="0.01" iyz="0" izz="0.01"/>
+      </inertial>
+      <visual>
+        <origin xyz="0 0 0" rpy="0 0 ${pantilt_offset_rz}"/>
+        <geometry>
+          <mesh filename="package://lepantilt_description/meshes/pantilt_base.stl"/>
+        </geometry>
+        <material name="light_grey"/>
+      </visual>
+      <visual>
+        <origin xyz="0 0 0" rpy="0 0 ${pantilt_offset_rz}"/>
+        <geometry>
+          <mesh filename="package://lepantilt_description/meshes/pan_motor.stl"/>
+        </geometry>
+        <material name="charcoal"/>
+      </visual>
+      <collision>
+        <origin xyz="0 0 0" rpy="0 0 ${pantilt_offset_rz}"/>
+        <geometry>
+          <mesh filename="package://lepantilt_description/meshes/pantilt_base.stl"/>
+        </geometry>
+      </collision>
+    </link>
+
+    <!-- Pan link -->
+    <link name="pan_link">
+      <inertial>
+        <mass value="0.119226"/>
+        <origin xyz="-9.07886e-05 0.0590972 0.031089" rpy="0 0 0"/>
+        <inertia ixx="5.94278e-05" ixy="0" ixz="0" iyy="5.89975e-05" iyz="0" izz="3.13712e-05"/>
+      </inertial>
+      <visual>
+        <origin xyz="0 0 0" rpy="${pan_offset_rx} 0 ${pan_offset_rz}"/>
+        <geometry>
+          <mesh filename="package://lepantilt_description/meshes/pan_joint.stl"/>
+        </geometry>
+        <material name="light_grey"/>
+      </visual>
+      <visual>
+        <origin xyz="0 0 0" rpy="${pan_offset_rx} 0 ${pan_offset_rz}"/>
+        <geometry>
+          <mesh filename="package://lepantilt_description/meshes/tilt_motor.stl"/>
+        </geometry>
+        <material name="charcoal"/>
+      </visual>
+      <collision>
+        <origin xyz="0 0 0" rpy="${pan_offset_rx} 0 ${pan_offset_rz}"/>
+        <geometry>
+          <mesh filename="package://lepantilt_description/meshes/pan_joint.stl"/>
+        </geometry>
+      </collision>
+    </link>
+
+    <!-- Tilt link -->
+    <link name="tilt_link">
+      <inertial>
+        <mass value="0.1"/>
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <inertia ixx="0.001" ixy="0" ixz="0" iyy="0.001" iyz="0" izz="0.001"/>
+      </inertial>
+      <visual>
+        <origin xyz="${tilt_visual_x} ${tilt_visual_y} ${tilt_visual_z}" rpy="${tilt_offset_rx} ${tilt_offset_ry} 0"/>
+        <geometry>
+          <mesh filename="package://lepantilt_description/meshes/tilt_joint.stl"/>
+        </geometry>
+        <material name="light_grey"/>
+      </visual>
+      <collision>
+        <origin xyz="${tilt_visual_x} ${tilt_visual_y} ${tilt_visual_z}" rpy="${tilt_offset_rx} ${tilt_offset_ry} 0"/>
+        <geometry>
+          <mesh filename="package://lepantilt_description/meshes/tilt_joint.stl"/>
+        </geometry>
+      </collision>
+    </link>
+
+    <!-- Pan joint (revolute) -->
+    <joint name="pan_joint" type="revolute">
+      <parent link="pantilt_base_link"/>
+      <child link="pan_link"/>
+      <origin xyz="${pan_joint_x} 0 ${pan_joint_z}" rpy="0 0 0"/>
+      <axis xyz="0 0 1"/>
+      <limit lower="${pan_joint_lower}" upper="${pan_joint_upper}" effort="${max_torque_nm}" velocity="${max_velocity_rads}"/>
+    </joint>
+
+    <!-- Tilt joint (revolute) -->
+    <joint name="tilt_joint" type="revolute">
+      <parent link="pan_link"/>
+      <child link="tilt_link"/>
+      <origin xyz="${tilt_joint_x} 0 ${tilt_joint_z}" rpy="${tilt_joint_rx} ${tilt_joint_ry} 0"/>
+      <axis xyz="0 0 1"/>
+      <limit lower="${tilt_joint_lower}" upper="${tilt_joint_upper}" effort="${max_torque_nm}" velocity="${max_velocity_rads}"/>
+    </joint>
+
+    <!-- OAK-D Camera (direct inclusion) -->
+    <xacro:include filename="$(find depthai_descriptions)/urdf/include/depthai_macro.urdf.xacro"/>
+    <xacro:depthai_camera
+      camera_name="oak_link"
+      camera_model="OAK-D-S2"
+      base_frame="oak_link"
+      parent="tilt_link"
+      cam_pos_x="${oak_pos_x}" cam_pos_y="${oak_pos_y}" cam_pos_z="0"
+      cam_roll="${oak_roll}" cam_pitch="0" cam_yaw="${oak_yaw}"
+      r="${charcoal_r}" g="${charcoal_g}" b="${charcoal_b}" a="1.0"/>
+
+    <!-- OAK-D-S2 IMU frame -->
+    <link name="oak_imu_frame"/>
+    <joint name="oak_imu_joint" type="fixed">
+      <parent link="oak_link"/>
+      <child link="oak_imu_frame"/>
+      <origin xyz="${oak_imu_x} ${oak_imu_y} ${oak_imu_z}" rpy="${oak_imu_r} ${oak_imu_p} 0"/>
+    </joint>
+
+
+  </xacro:macro>
+
+</robot>
