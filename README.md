@@ -1,18 +1,18 @@
 # Pan Tilt 100
 
-![Project Status](https://img.shields.io/badge/Status-Active-green)
+![Project Status](https://img.shields.io/badge/Status-WIP-yellow)
 ![ROS 2](https://img.shields.io/badge/ROS%202-Kilted%20(Ubuntu%2024.04)-blue?style=flat&logo=ros&logoSize=auto)
 [![Ask DeepWiki (Experimental)](https://deepwiki.com/badge.svg)](https://deepwiki.com/adityakamath/pantilt100)
 [![Blog](https://img.shields.io/badge/Blog-kamathrobotics.com-darkorange?style=flat&logo=hashnode&logoSize=auto)](https://kamathrobotics.com)
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
+
+>**⚠️ Disclaimer:** This package will eventually be integrated into [lekiwi_ros2](https://github.com/adityakamath/lekiwi_ros2), and is just a sandbox repo for testing a few things. It is a work in progress and may not always be stable or fully functional. The documentation is AI generated, but then manually reviewed. Use with caution, and expect breaking changes.
 
 ROS 2 software stack for a 2-DOF pan-tilt camera mount using [SO-ARM100](https://github.com/TheRobotStudio/SO-ARM100) parts, [Feetech STS3215](https://www.feetechrc.com/2020-05-13_56655.html) servo motors and an [OAK-D S2](https://docs.luxonis.com/hardware/products/OAK-D%20S2) camera. Provides position control with joystick teleop, visual-inertial odometry (VIO) bringup, and an embeddable xacro module for integration into other robots.
 
 <p align="center">
   <img width="421" height="484" alt="Screenshot 2026-04-25 at 17 54 21" src="https://github.com/user-attachments/assets/405d2871-4e9b-46ef-965d-933eec8f2102" />
 </p>
-
-**⚠️ Status:** Tested and validated using reference hardware with ROS 2 Kilted on Ubuntu 24.04 running on a Raspberry Pi 5. Needs motor calibration and serial port configuration before use.
 
 ## Hardware Requirements
 
@@ -25,7 +25,7 @@ ROS 2 software stack for a 2-DOF pan-tilt camera mount using [SO-ARM100](https:/
 | Structural     | 3D printed Base and shoulder parts from [SO-ARM100](https://github.com/TheRobotStudio/SO-ARM100) |
 | Camera mount   | 3D printed OAK-D S2 bracket (STL in [`pt100_description/meshes/`](pt100_description/meshes/))    |
 
-Both motors are chained together on a single serial bus at 1 Mbaud, connected to the host via the Waveshare servo driver. The URDF is dimensioned from SO100 parts; parts from either SO100 or SO101 are compatible.
+Both motors are chained together on a single serial bus at 1 Mbaud, connected to the host via the Waveshare servo driver. The URDF is simply the SO100 URDF, but only till the second joint; but parts from either SO100 or SO101 are compatible.
 
 | Parameter   | Launch argument | Argument value  | URDF default   |
 |-------------|-----------------|-----------------|----------------|
@@ -48,7 +48,7 @@ Pass updated values at launch:
 ros2 launch pt100_control pantilt.launch.py pan_center_steps:=2100 tilt_center_steps:=2700
 ```
 
-Or make the change permanent by editing the defaults in [`pt100_control/launch/pantilt.launch.py`](pt100_control/launch/pantilt.launch.py).
+Or permanently edit the defaults in [`pt100_control/launch/pantilt.launch.py`](pt100_control/launch/pantilt.launch.py).
 
 ## Dependencies
 
@@ -58,18 +58,20 @@ Or make the change permanent by editing the defaults in [`pt100_control/launch/p
 - **[depthai-ros](https://github.com/luxonis/depthai-ros)** — DepthAI ROS 2 driver for the OAK-D S2 Camera
 - **[joy_teleop](https://index.ros.org/p/joy_teleop/)** — joystick-to-topic bridge (included in this package's launch)
 
-> **Joystick:** `joy_teleop` is included but the [`joy`](https://github.com/ros-drivers/joystick_drivers) node is **not** — it must be started separately (on the same or a networked device) before the system will respond to controller input:
+> **⚠️ Joystick:** `joy_teleop` is included but the [`joy`](https://github.com/ros-drivers/joystick_drivers) node is **not** — it must be started separately (on the same or a networked device) before the system will respond to controller input:
 > ```bash
 > ros2 run joy joy_node
 > ```
 
-## System Setup
+## Raspberry Pi System Setup
 
-On a Raspberry Pi, add the following to `/boot/firmware/config.txt` and reboot to enable USB SuperSpeed (USB 3.0 at 5 Gbps), which the OAK-D S2 requires:
+The OAK-D S2 requires USB 3.0 (5 Gbps) for its combined stereo depth, RGB, and IMU streams, and draws more current than the Raspberry Pi 5's default 600 mA USB cap allows. Add the following to `/boot/firmware/config.txt` and reboot to raise the cap:
 
 ```
 usb_max_current_enable=1
 ```
+
+> **⚠️ Note:** This raises the per-port USB current limit from 600 mA to 1200 mA. On an inadequate power supply, or with multiple high-power USB devices connected, this can cause brownouts. For best performance, use an adequate power supply that satisfies the recommended minimum for the Raspberry Pi and ensure the OAK-D S2 is the only high-current USB device on the bus.
 
 ## Installation
 
