@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-LePanTilt robot ROS 2 control stack launch file.
+Pan-Tilt100 robot ROS 2 control stack launch file.
 
 This launch file starts:
     - robot_state_publisher
@@ -23,7 +23,7 @@ from launch_ros.substitutions import FindPackageShare
 
 def generate_launch_description():
     """
-    Generate launch description for LePanTilt control stack.
+    Generate launch description for Pan-Tilt100 control stack.
     Declares arguments for hardware, diagnostics, and launches nodes in sequence.
     """
 
@@ -67,7 +67,7 @@ def generate_launch_description():
             PathJoinSubstitution([FindExecutable(name="xacro")]),
             " ",
             PathJoinSubstitution([
-                FindPackageShare("lepantilt_description"),
+                FindPackageShare("pt100_description"),
                 "urdf",
                 "pantilt.urdf.xacro",
             ]),
@@ -93,7 +93,7 @@ def generate_launch_description():
     }
 
     controller_config = PathJoinSubstitution(
-        [FindPackageShare("lepantilt_control"), "config", "pantilt_control_config.yaml"]
+        [FindPackageShare("pt100_control"), "config", "pantilt_control_config.yaml"]
     )
 
     # Publishes robot state (TFs, joint states)
@@ -150,7 +150,7 @@ def generate_launch_description():
         PythonLaunchDescriptionSource(
             [
                 PathJoinSubstitution([
-                    FindPackageShare("lepantilt_control"),
+                    FindPackageShare("pt100_control"),
                     "launch",
                     "teleop.launch.py",
                 ])

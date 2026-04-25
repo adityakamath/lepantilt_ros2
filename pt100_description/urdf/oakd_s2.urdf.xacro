@@ -3,7 +3,7 @@
 	xmlns:xacro="http://ros.org/wiki/xacro">
 
 	<!--
-	  Custom OAK-D-S2 camera macro for lepantilt only.
+	  Custom OAK-D-S2 camera macro for pt100 only.
 	  This version allows direct color parameterization (r/g/b/a) for the mesh material.
 	-->
 
@@ -16,10 +16,10 @@
 
 		<!-- File prefix for mesh location -->
 		<xacro:if value="${simulation}">
-			<xacro:property name="mesh_path" value="file://$(find lepantilt_description)/meshes/oakd_s2.stl" />
+			<xacro:property name="mesh_path" value="file://$(find pt100_description)/meshes/oakd_s2.stl" />
 		</xacro:if>
 		<xacro:unless value="${simulation}">
-			<xacro:property name="mesh_path" value="package://lepantilt_description/meshes/oakd_s2.stl" />
+			<xacro:property name="mesh_path" value="package://pt100_description/meshes/oakd_s2.stl" />
 		</xacro:unless>
 
 		<!-- base_link of the sensor-->

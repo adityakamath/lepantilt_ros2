@@ -30,7 +30,7 @@ def generate_launch_description():
         config_file = "vio_pcl.yaml" if pointcloud else "vio.yaml"
         params_file = ParameterFile(
             os.path.join(
-                get_package_share_directory("lepantilt_bringup"),
+                get_package_share_directory("pt100_bringup"),
                 "config",
                 config_file,
             ),

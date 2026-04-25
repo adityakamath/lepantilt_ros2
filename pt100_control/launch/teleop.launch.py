@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
-Launch joy_teleop for lepantilt joystick control.
+Launch joy_teleop for Pan-Tilt100 joystick control.
 
-Subscribes to /joy and publishes JointTrajectory commands to lepantilt_controller.
+Subscribes to /joy and publishes JointTrajectory commands to pt100_controller.
 """
 
 from launch import LaunchDescription
@@ -12,7 +12,7 @@ from launch_ros.substitutions import FindPackageShare
 
 def generate_launch_description():
     teleop_config = PathJoinSubstitution(
-        [FindPackageShare("lepantilt_control"), "config", "teleop_config.yaml"]
+        [FindPackageShare("pt100_control"), "config", "teleop_config.yaml"]
     )
 
     teleop_node = Node(

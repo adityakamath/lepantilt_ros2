@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 """
-Main bringup launch file for the LePanTilt robot.
+Main bringup launch file for the Pan-Tilt100 robot.
 
 This launch file includes:
-    - lepantilt_control's pantilt.launch.py (robot control stack)
-    - lepantilt_bringup's depthai.launch.py (OAK-D camera)
+    - pt100_control's pantilt.launch.py (robot control stack)
+    - pt100_bringup's oakd.launch.py (OAK-D camera)
 It forwards relevant launch arguments to each included launch file.
 """
 
@@ -40,10 +40,10 @@ def generate_launch_description():
     ]
 
     # Include the PanTilt control stack launch file, forwarding use_mock and diagnostics
-    lepantilt_control_launch = IncludeLaunchDescription(
+    pt100_control_launch = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
             PathJoinSubstitution([
-                FindPackageShare("lepantilt_control"),
+                FindPackageShare("pt100_control"),
                 "launch",
                 "pantilt.launch.py"
             ])
@@ -55,12 +55,12 @@ def generate_launch_description():
     )
 
     # Include the OAK-D camera launch file, forwarding params_file
-    depthai_launch = IncludeLaunchDescription(
+    oakd_launch = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
             PathJoinSubstitution([
-                FindPackageShare("lepantilt_bringup"),
+                FindPackageShare("pt100_bringup"),
                 "launch",
-                "depthai.launch.py"
+                "oakd.launch.py"
             ])
         ),
         launch_arguments={
@@ -70,6 +70,6 @@ def generate_launch_description():
 
     # Return the composed launch description
     return LaunchDescription(declared_arguments + [
-        lepantilt_control_launch,
-        depthai_launch
+        pt100_control_launch,
+        oakd_launch
     ])
