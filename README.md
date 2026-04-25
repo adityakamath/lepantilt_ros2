@@ -93,26 +93,38 @@ source install/setup.bash
 ```
 
 ## Usage
+The package provides multiple launch files for different use cases:
 
-### Control stack only (no camera)
+### Visualization only (no hardware, just URDF/TF)
+
+```bash
+ros2 launch pt100_description urdf.launch.py
+```
+
+This launches only the robot_state_publisher node with the Pan Tilt 100 URDF, for visualization or model inspection in RViz or other tools. No hardware, controllers, or teleop nodes are started. Useful for:
+- Viewing the robot model and TF tree
+- Debugging or editing the URDF
+- Integrating the model into other systems or simulation environments
+
+### Control stack only
 
 ```bash
 ros2 launch pt100_control pantilt.launch.py
 ```
 
-### Camera driver only (no control stack)
+### Camera driver only
 
 ```bash
 ros2 launch pt100_bringup oakd.launch.py
 ```
 
-### Full PT100 bringup (control + OAK-D S2 camera)
+### Full PT100 bringup (control + camera)
 
 ```bash
 ros2 launch pt100_bringup pt100.launch.py
 ```
 
-### Mock mode (no hardware required)
+### Mock control stack (no hardware required)
 
 ```bash
 ros2 launch pt100_control pantilt.launch.py use_mock:=true
@@ -140,31 +152,33 @@ ros2 launch pt100_control pantilt.launch.py use_mock:=true
 
 ```text
 pantilt100/
-├── pt100_description/       # URDF model and meshes
+├── pt100_description/             # URDF model, meshes, and visualization launch
 │   ├── urdf/
-│   │   ├── pantilt.common.xacro     # Geometry constants and visual offsets
-│   │   ├── pantilt.control.xacro    # ros2_control block, motor parameters, joint limits
-│   │   ├── pt100.module.xacro       # Links and joints as an embeddable xacro macro
-│   │   ├── pantilt.urdf.xacro       # Standalone entry point (includes all three above)
-│   │   ├── oakd_s2.module.xacro     # OAK-D S2 camera and IMU macro
-│   │   └── pantilt.urdf             # Pre-generated URDF for external tools (not used at runtime)
-│   └── meshes/                      # STL files for pan-tilt body and OAK-D S2
-│
-├── pt100_control/           # Controllers, config, and launch files
-│   ├── config/
-│   │   ├── pantilt_config.yaml  # Controller manager, spawner types, joint limits
-│   │   └── teleop_config.yaml           # joy_teleop axis/button mapping
+│   │   ├── pantilt.common.xacro   # Geometry constants and visual offsets
+│   │   ├── pantilt.control.xacro  # ros2_control block, motor parameters, joint limits
+│   │   ├── pt100.module.xacro     # Links and joints as an embeddable xacro macro
+│   │   ├── pantilt.urdf.xacro     # Standalone entry point (includes all three above)
+│   │   ├── oakd_s2.module.xacro   # OAK-D S2 camera and IMU macro
+│   │   └── pantilt.urdf           # Pre-generated URDF for external tools (not used at runtime)
+│   ├── meshes/                    # STL files for pan-tilt body and OAK-D S2
 │   └── launch/
-│       ├── pantilt.launch.py    # Control stack (RSP, controller_manager, spawners, teleop)
-│       └── teleop.launch.py     # joy_teleop node in isolation
+│       └── urdf.launch.py         # Visualization-only launch file (robot_state_publisher)
 │
-└── pt100_bringup/           # System-level launch files and camera config
-    ├── config/
-    │   ├── vio.yaml             # OAK-D S2: RGBD pipeline + VIO at 60 Hz, no point cloud
-    │   └── vio_pcl.yaml         # OAK-D S2: same as above with RGBD point cloud enabled
-    └── launch/
-        ├── pt100.launch.py    # Full PT100 system: includes pt100_control + oakd
-        └── oakd.launch.py    # OAK-D S2 camera driver only
+├── pt100_control/                 # Controllers, config, and launch files
+│   ├── config/
+│   │   ├── pantilt_config.yaml    # Controller manager, spawner types, joint limits
+│   │   └── teleop_config.yaml     # joy_teleop axis/button mapping
+│   └── launch/
+│       ├── pantilt.launch.py      # Control stack (RSP, controller_manager, spawners, teleop)
+│       └── teleop.launch.py       # joy_teleop node in isolation
+│
+└── pt100_bringup/                 # System-level launch files and camera config
+  ├── config/
+  │   ├── vio.yaml                 # OAK-D S2: RGBD pipeline + VIO at 60 Hz, no point cloud
+  │   └── vio_pcl.yaml             # OAK-D S2: same as above with RGBD point cloud enabled
+  └── launch/
+    ├── pt100.launch.py            # Full PT100 system: includes pt100_control + oakd
+    └── oakd.launch.py             # OAK-D S2 camera driver only
 ```
 
 ## Package Details
