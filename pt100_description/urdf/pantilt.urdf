@@ -23,7 +23,7 @@
       <param name="operating_mode">0</param>
       <param name="min_position">-1.5707963267948966</param>
       <param name="max_position">1.5707963267948966</param>
-      <param name="max_velocity">2.60776733940559</param>
+      <param name="max_velocity">4.4332044769895</param>
       <param name="position_center_steps">2048</param>
       <command_interface name="position"/>
       <state_interface name="position"/>
@@ -40,7 +40,7 @@
       <param name="operating_mode">0</param>
       <param name="min_position">-1.5707963267948966</param>
       <param name="max_position">1.5707963267948966</param>
-      <param name="max_velocity">2.60776733940559</param>
+      <param name="max_velocity">4.4332044769895</param>
       <param name="position_center_steps">2646</param>
       <command_interface name="position"/>
       <state_interface name="position"/>
