@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Main bringup launch file for the Pan-Tilt100 robot.
+Main bringup launch file for the complete Pan Tilt 100 system: mechanism + camera.
 
 This launch file includes:
     - pt100_control's pantilt.launch.py (robot control stack)
@@ -16,7 +16,7 @@ from launch_ros.substitutions import FindPackageShare
 
 def generate_launch_description():
     """
-    Generate a launch description that brings up the PanTilt robot control and camera nodes.
+    Generate a launch description that brings up the Pan Tilt 100 mechanism control and camera nodes.
     Declares and forwards arguments to included launch files.
     """
 

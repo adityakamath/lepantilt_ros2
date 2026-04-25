@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Launch joy_teleop for Pan-Tilt100 joystick control.
+Launch joy_teleop for Pan Tilt 100 joystick control.
 
 Subscribes to /joy and publishes JointTrajectory commands to pt100_controller.
 """

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Pan-Tilt100 robot ROS 2 control stack launch file.
+Pan Tilt 100 ROS 2 control stack launch file.
 
 This launch file starts:
     - robot_state_publisher

@@ -1,4 +1,4 @@
-# Pan-Tilt100 ROS 2 Driver
+# Pan Tilt 100 ROS 2 Driver
 
 ![Project Status](https://img.shields.io/badge/Status-Active-green)
 ![ROS 2](https://img.shields.io/badge/ROS%202-Kilted%20(Ubuntu%2024.04)-blue?style=flat&logo=ros&logoSize=auto)

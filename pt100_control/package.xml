@@ -3,7 +3,7 @@
 <package format="3">
   <name>pt100_control</name>
   <version>0.1.0</version>
-  <description>Command and control nodes for the Pan-Tilt100 mechanism using STS3215 servo motors</description>
+  <description>Command and control nodes for the Pan Tilt 100 mechanism using STS3215 servo motors</description>
   <maintainer email="adityakamath@live.com">adityakamath</maintainer>
   <license>Apache-2.0</license>
 

@@ -3,7 +3,7 @@
 <package format="3">
   <name>pt100_bringup</name>
   <version>0.0.1</version>
-  <description>Bringup package for Pan-Tilt100 system, including camera and control launch files.</description>
+  <description>Bringup package for Pan Tilt 100, including camera and control launch files.</description>
   <maintainer email="adityakamath@live.com">Aditya Kamath (Kamath Robotics)</maintainer>
   <license>Apache-2.0</license>
 
