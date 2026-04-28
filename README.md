@@ -11,7 +11,7 @@
 ROS 2 software stack for a 2-DOF pan-tilt camera mount using [SO-ARM100](https://github.com/TheRobotStudio/SO-ARM100) parts, [Feetech STS3215](https://www.feetechrc.com/2020-05-13_56655.html) servo motors and an [OAK-D S2](https://docs.luxonis.com/hardware/products/OAK-D%20S2) camera. Provides position control with joystick teleop, visual-inertial odometry (VIO) bringup, and an embeddable xacro module for integration into other robots.
 
 <p align="center">
-  <img width="421" height="484" alt="Screenshot 2026-04-25 at 17 54 21" src="https://github.com/user-attachments/assets/405d2871-4e9b-46ef-965d-933eec8f2102" />
+  <img width="500" height="575" alt="Screenshot 2026-04-28 at 15 56 11" src="https://github.com/user-attachments/assets/c9520454-7523-44a7-bcb3-8b6428437759" />
 </p>
 
 ## Hardware Requirements
