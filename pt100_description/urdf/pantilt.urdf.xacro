@@ -9,7 +9,6 @@
   <xacro:arg name="tilt_motor_id"  default="2"/>
   <xacro:arg name="pan_center_steps" default="2048"/>
   <xacro:arg name="tilt_center_steps" default="2646"/>
-  <xacro:arg name="pantilt_operating_mode" default="0"/>
 
   <xacro:include filename="$(find pt100_description)/urdf/pantilt.common.xacro"/>
   <xacro:include filename="$(find pt100_description)/urdf/pantilt.control.xacro"/>
