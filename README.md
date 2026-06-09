@@ -6,7 +6,7 @@
 [![Blog](https://img.shields.io/badge/Blog-kamathrobotics.com-darkorange?style=flat&logo=hashnode&logoSize=auto)](https://kamathrobotics.com/pan-tilt-controls-using-ros-2)
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
 
->**⚠️ Disclaimer:** This package will eventually be integrated into [lekiwi_ros2](https://github.com/adityakamath/lekiwi_ros2), and for now is just a sandbox / template repo for testing a few things. It is a work in progress and may not always be stable or fully functional. The documentation is AI generated, but then manually reviewed. Use with caution, and expect breaking changes.
+>**⚠️ Disclaimer:** This package is integrated into [lekiwi_ros2](https://github.com/adityakamath/lekiwi_ros2) as a git submodule under `payloads/pantilt100/`. It is a work in progress and may not always be stable or fully functional. The documentation is AI generated, but then manually reviewed. Use with caution, and expect breaking changes.
 
 ROS 2 software stack for a 2-DOF pan-tilt camera mount using [SO-ARM100](https://github.com/TheRobotStudio/SO-ARM100) parts, [Feetech STS3215](https://www.feetechrc.com/2020-05-13_56655.html) servo motors and an [OAK-D S2](https://docs.luxonis.com/hardware/products/OAK-D%20S2) camera. Provides position control with joystick teleop, visual-inertial odometry (VIO) bringup, and an embeddable xacro module for integration into other robots.
 
@@ -27,28 +27,27 @@ ROS 2 software stack for a 2-DOF pan-tilt camera mount using [SO-ARM100](https:/
 
 Both motors are chained together on a single serial bus at 1 Mbaud, connected to the host via the Waveshare servo driver. The URDF is simply the SO100 URDF, but only till the second joint; but parts from either SO100 or SO101 are compatible.
 
-| Parameter   | Launch argument | Argument value  | URDF default   |
-|-------------|-----------------|-----------------|----------------|
-| Serial port | `serial_port`   | `/dev/ttySERVO` | `/dev/ttyACM0` |
+| Parameter   | Launch argument   | Default value   |
+|-------------|-------------------|-----------------|
+| Serial port | `sts_serial_port` | `/dev/ttySERVO` |
 
-`/dev/ttySERVO` is a user-created udev symlink set as the default in [`pt100_control/launch/pantilt.launch.py`](pt100_control/launch/pantilt.launch.py). Identify your actual device (commonly `/dev/ttyACM0` or `/dev/ttyUSB0`) and pass it with the `serial_port` argument, or update the default in the launch file.
+`/dev/ttySERVO` is a user-created udev symlink. Identify your actual device (commonly `/dev/ttyACM0` or `/dev/ttyUSB0`) and either pass it with the `sts_serial_port` argument at launch, or set it permanently in [`pt100_control/config/urdf_config.yaml`](pt100_control/config/urdf_config.yaml).
 
 ### Motor Calibration
 
-Each motor has a **center position** (in raw steps, 0–4095) that maps to 0 rad in the URDF. The defaults below are the launch argument values and match the reference hardware build; must be recalibrated since other physical assemblies will differ.
+Each motor has a **center position** (in raw steps, 0–4095) that maps to 0 rad in the URDF. The defaults below match the reference hardware build; recalibrate if your physical assembly differs.
 
-| Joint      | Launch argument      | Argument value | URDF default |
-|------------|----------------------|----------------|--------------|
-| Pan        | `pan_center_steps`   | `2048`         | `2048`       |
-| Tilt       | `tilt_center_steps`  | `2646`         | `2048`       |
+| Joint | Parameter           | Default |
+|-------|---------------------|---------|
+| Pan   | `pan_center_steps`  | `2048`  |
+| Tilt  | `tilt_center_steps` | `2646`  |
 
-Pass updated values at launch:
+Update these permanently in [`pt100_control/config/urdf_config.yaml`](pt100_control/config/urdf_config.yaml):
 
-```bash
-ros2 launch pt100_control pantilt.launch.py pan_center_steps:=2100 tilt_center_steps:=2700
+```yaml
+pan_center_steps: 2100
+tilt_center_steps: 2700
 ```
-
-Or permanently edit the defaults in [`pt100_control/launch/pantilt.launch.py`](pt100_control/launch/pantilt.launch.py).
 
 ## Dependencies
 
@@ -75,6 +74,8 @@ usb_max_current_enable=1
 
 ## Installation
 
+### Standalone
+
 Install [depthai-ros](https://docs.luxonis.com/software/ros/depthai-ros/) via apt:
 
 ```bash
@@ -92,6 +93,14 @@ cd ..
 colcon build --packages-select pt100_description pt100_control pt100_bringup sts_hardware_interface
 
 source install/setup.bash
+```
+
+### As part of lekiwi_ros2
+
+pantilt100 is included as a git submodule under `payloads/pantilt100/` in [lekiwi_ros2](https://github.com/adityakamath/lekiwi_ros2). After cloning lekiwi_ros2, initialise the submodule:
+
+```bash
+git submodule update --init --recursive
 ```
 
 ## Usage
@@ -134,21 +143,15 @@ ros2 launch pt100_control pantilt.launch.py use_mock:=true
 
 ### Launch arguments
 
-| Argument            | Package                          | Default          | Description                                        |
-|---------------------|----------------------------------|------------------|----------------------------------------------------|
-| `serial_port`       | `pt100_control`                  | `/dev/ttySERVO`  | Serial port for STS motor communication            |
-| `use_mock`          | `pt100_control`, `pt100_bringup` | `false`          | Run without hardware (simulated motor responses)   |
-| `use_sync_write`    | `pt100_control`                  | `true`           | Coordinated SyncWrite for simultaneous motor moves |
-| `pan_center_steps`  | `pt100_control`                  | `2048`           | Raw step value that maps to 0 rad on pan axis      |
-| `tilt_center_steps` | `pt100_control`                  | `2646`           | Raw step value that maps to 0 rad on tilt axis     |
-| `diagnostics`       | `pt100_control`, `pt100_bringup` | `true`           | Launch motor diagnostics node                      |
-| `pointcloud`        | `pt100_bringup`                  | `false`          | Enable RGBD point cloud pipeline on OAK-D S2       |
+| Argument          | Package                          | Default | Description                                        |
+|-------------------|----------------------------------|---------|----------------------------------------------------|
+| `sts_serial_port` | `pt100_control`, `pt100_bringup` | `""`    | Serial port override; empty means use `urdf_config.yaml` value |
+| `use_mock`        | `pt100_control`, `pt100_bringup` | `""`    | Mock mode override; empty means use `urdf_config.yaml` value   |
+| `diagnostics`     | `pt100_control`, `pt100_bringup` | `true`  | Launch motor diagnostics node                      |
+| `pointcloud`      | `pt100_bringup`                  | `false` | Enable RGBD point cloud pipeline on OAK-D S2       |
+| `use_sim_time`    | `pt100_control`, `pt100_bringup` | `false` | Use `/clock` from a simulator instead of system time |
 
-> **Note:** `pt100_bringup` only forwards `use_mock` and `diagnostics` to the control stack — `serial_port`, `use_sync_write`, `pan_center_steps`, and `tilt_center_steps` use their `pt100_control` launch defaults when launched via bringup.
->
-> The **URDF fallback** column shows defaults in [`pantilt.control.xacro`](pt100_description/urdf/pantilt.control.xacro), which apply when the module is embedded into another robot and no override is passed. When `pantilt.urdf.xacro` is invoked directly (e.g. for visualisation), its own arg declarations take precedence and match the launch file defaults.
->
-> Motor IDs (`pan_motor_id`, `tilt_motor_id`) and baud rate are **xacro-only parameters** — the launch files do not forward them. Change them permanently in [`pantilt.control.xacro`](pt100_description/urdf/pantilt.control.xacro).
+> **Note:** All hardware parameters (serial port, baud rate, motor IDs, center steps, joint limits, etc.) are configured in [`pt100_control/config/urdf_config.yaml`](pt100_control/config/urdf_config.yaml). `sts_serial_port` and `use_mock` can be overridden at launch time; all other parameters must be changed in the yaml file directly.
 
 ## Package Structure
 
@@ -158,16 +161,17 @@ pantilt100/
 │   ├── urdf/
 │   │   ├── pantilt.common.xacro   # Geometry constants and visual offsets
 │   │   ├── pantilt.control.xacro  # ros2_control block, motor parameters, joint limits
+│   │   ├── pantilt.joints.xacro   # Pan/tilt joint declarations as an embeddable macro (shared-bus use)
 │   │   ├── pt100.module.xacro     # Links and joints as an embeddable xacro macro
-│   │   ├── pantilt.urdf.xacro     # Standalone entry point (includes all three above)
-│   │   ├── oakd_s2.module.xacro   # OAK-D S2 camera and IMU macro
-│   │   └── pantilt.urdf           # Pre-generated URDF for external tools (not used at runtime)
+│   │   ├── pantilt.urdf.xacro     # Standalone entry point (includes all above)
+│   │   └── oakd_s2.module.xacro   # OAK-D S2 camera and IMU macro
 │   ├── meshes/                    # STL files for pan-tilt body and OAK-D S2
 │   └── launch/
 │       └── urdf.launch.py         # Visualization-only launch file (robot_state_publisher)
 │
 ├── pt100_control/                 # Controllers, config, and launch files
 │   ├── config/
+│   │   ├── urdf_config.yaml       # Hardware parameters (serial port, motor IDs, center steps, joint limits)
 │   │   ├── pantilt_config.yaml    # Controller manager, spawner types, joint limits
 │   │   └── teleop_config.yaml     # joy_teleop axis/button mapping
 │   └── launch/
@@ -176,8 +180,8 @@ pantilt100/
 │
 └── pt100_bringup/                 # System-level launch files and camera config
   ├── config/
-  │   ├── vio.yaml                 # OAK-D S2: RGBD pipeline + VIO at 60 Hz, no point cloud
-  │   └── vio_pcl.yaml             # OAK-D S2: same as above with RGBD point cloud enabled
+  │   ├── oakd_vio.yaml            # OAK-D S2: RGBD pipeline + VIO at 60 Hz, no point cloud
+  │   └── oakd_vio_pcl.yaml        # OAK-D S2: same as above with RGBD point cloud enabled
   └── launch/
     ├── pt100.launch.py            # Full PT100 system: includes pt100_control + oakd
     └── oakd.launch.py             # OAK-D S2 camera driver only
@@ -187,18 +191,21 @@ pantilt100/
 
 ### pt100_description
 
-The URDF is split across four xacro files with distinct responsibilities:
+The URDF is split across several xacro files with distinct responsibilities:
 
-| File                      | Purpose                                                                       |
-|---------------------------|-------------------------------------------------------------------------------|
-| `pantilt.common.xacro`    | Visual offsets, mesh colours, joint origins, camera mount position            |
-| `pantilt.control.xacro`   | Launch args, motor velocity/torque limits, joint limits, `ros2_control` block |
-| `pt100.module.xacro`      | All links and joints wrapped in a `pt100_module` xacro macro                  |
-| `pantilt.urdf.xacro`      | Standalone robot: creates `base_footprint`, instantiates the macro            |
+| File                     | Purpose                                                                       |
+|--------------------------|-------------------------------------------------------------------------------|
+| `pantilt.common.xacro`   | Visual offsets, mesh colours, joint origins, camera mount position            |
+| `pantilt.control.xacro`  | Launch args, motor velocity/torque limits, joint limits, `ros2_control` block |
+| `pantilt.joints.xacro`   | Pan/tilt joint declarations as a macro — for embedding on a shared serial bus |
+| `pt100.module.xacro`     | All links and joints wrapped in a `pt100_module` xacro macro                  |
+| `pantilt.urdf.xacro`     | Standalone robot: creates `base_footprint`, instantiates the macro            |
 
 Both pan and tilt joints use `velocity="1e6"` in their URDF `<limit>` elements. See [Design](#design) for the reason.
 
 ### pt100_control
+
+Hardware parameters are read from [`config/urdf_config.yaml`](pt100_control/config/urdf_config.yaml) at launch time. `sts_serial_port` and `use_mock` can be overridden on the command line (empty string = use yaml value); all other parameters (motor IDs, center steps, joint limits, etc.) must be edited in the yaml directly.
 
 The `pantilt_controller` uses a [`ForwardCommandController`](https://control.ros.org/kilted/doc/ros2_controllers/forward_command_controller/doc/userdoc.html) on the `position` interface. Each cycle it forwards the commanded position directly to the hardware interface, which translates it to motor steps. Velocity profiling is handled by the STS3215 motor firmware, not in software. The controller manager runs at **50 Hz** (set in `pantilt_config.yaml`).
 
@@ -222,10 +229,10 @@ Joystick axes map directly to **absolute** joint positions, not velocities. The 
 
 `oakd.launch.py` launches the OAK-D S2 as a composable node. Two pipeline configurations are available:
 
-| Config file   | Pipeline                                                        | Use case                        |
-|---------------|-----------------------------------------------------------------|---------------------------------|
-| `vio.yaml`    | RGB 30 Hz, depth 15 Hz (decimated), VIO 60 Hz                   | Default — odometry and tracking |
-| `vio_pcl.yaml`| RGB 30 Hz, depth 30 Hz (no decimation), VIO 60 Hz + point cloud | 3D mapping (higher CPU load)    |
+| Config file       | Pipeline                                                        | Use case                        |
+|-------------------|-----------------------------------------------------------------|---------------------------------|
+| `oakd_vio.yaml`   | RGB 30 Hz, depth 15 Hz (decimated), VIO 60 Hz                   | Default — odometry and tracking |
+| `oakd_vio_pcl.yaml`| RGB 30 Hz, depth 30 Hz (no decimation), VIO 60 Hz + point cloud | 3D mapping (higher CPU load)    |
 
 Set `DEPTHAI_DEBUG=1` in the environment before launching to enable debug-level logging from the camera driver.
 
@@ -265,10 +272,13 @@ base_footprint                             ← standalone root (pantilt.urdf.xac
 
 ## Embedding as a Module
 
-The pan-tilt is designed to be mounted on another robot. Include `pantilt.control.xacro` and `pt100.module.xacro` in the host robot's URDF, then instantiate the macro with the desired parent link and mount origin:
+The pan-tilt is designed to be mounted on another robot. Two embedding strategies are available depending on whether the host robot shares the same serial bus as the pan-tilt motors.
+
+### Dedicated serial bus
+
+Include `pantilt.control.xacro` (which defines a standalone `<ros2_control>` hardware block) and `pt100.module.xacro` in the host robot's URDF:
 
 ```xml
-<!-- In the host robot's URDF xacro -->
 <xacro:include filename="$(find pt100_description)/urdf/pantilt.control.xacro"/>
 <xacro:include filename="$(find pt100_description)/urdf/pt100.module.xacro"/>
 
@@ -277,25 +287,62 @@ The pan-tilt is designed to be mounted on another robot. Include `pantilt.contro
 </xacro:pt100_module>
 ```
 
-In the host robot's controller config, add `has_velocity_limits: false` for the pan and tilt joints under `controller_manager.ros__parameters.joint_limits` to prevent spurious rate-limiting errors (see [Design](#design)):
+### Shared serial bus
+
+If all motors (host + pan-tilt) share one serial bus and a single `<ros2_control>` hardware block, include `pantilt.joints.xacro` instead and call the `pt100_joints` macro inside the host's existing hardware block:
+
+```xml
+<xacro:include filename="$(find pt100_description)/urdf/pantilt.joints.xacro"/>
+
+<ros2_control name="host_control" type="system">
+  <hardware>...</hardware>
+  <!-- host joints here -->
+  <xacro:pt100_joints
+      pan_motor_id="1"
+      tilt_motor_id="2"
+      pan_center_steps="2048"
+      tilt_center_steps="2646"
+      sts_max_velocity_steps="${sts_max_velocity_steps}"
+      pan_joint_lower="${pan_joint_lower}"
+      pan_joint_upper="${pan_joint_upper}"
+      tilt_joint_lower="${tilt_joint_lower}"
+      tilt_joint_upper="${tilt_joint_upper}"/>
+</ros2_control>
+```
+
+Then include `pt100.module.xacro` separately for the visual model:
+
+```xml
+<xacro:include filename="$(find pt100_description)/urdf/pt100.module.xacro"/>
+
+<xacro:pt100_module parent="base_link">
+  <origin xyz="0.0 0.0 0.15" rpy="0 0 0"/>
+</xacro:pt100_module>
+```
+
+In the host robot's controller config, add the pantilt joint limits under `controller_manager.ros__parameters.joint_limits`:
 
 ```yaml
 controller_manager:
   ros__parameters:
     joint_limits:
       pan_joint:
+        has_position_limits: true
+        min_position: -1.5708
+        max_position: 1.5708
         has_velocity_limits: false
       tilt_joint:
+        has_position_limits: true
+        min_position: -1.5708
+        max_position: 1.5708
         has_velocity_limits: false
 ```
-
-The `ros2_control` hardware block is defined in `pantilt.control.xacro` (not inside the macro itself), so no additional hardware interface configuration is needed beyond the above.
 
 ## Design
 
 ### Xacro module design
 
-The robot model is split into `common` (geometry), `control` (ros2_control + motor parameters), and `module` (links and joints) rather than one flat URDF. This allows the pan-tilt to be embedded into any host robot by including only `control` and `module` — the standalone `pantilt.urdf.xacro` is just a thin wrapper that creates a `base_footprint` root and instantiates the macro.
+The robot model is split into `common` (geometry), `control` (ros2_control + motor parameters), `joints` (embeddable joint declarations), and `module` (links and joints) rather than one flat URDF. This allows the pan-tilt to be embedded into any host robot — either with its own hardware block (`pantilt.control.xacro`) or as joint additions to an existing shared-bus block (`pantilt.joints.xacro`). The standalone `pantilt.urdf.xacro` is a thin wrapper that creates a `base_footprint` root and instantiates the macro.
 
 The `pt100_module` macro takes a `parent` link and an `origin` block. The `pantilt_mount_joint` inside the macro connects `parent` → `pantilt_base_link`, so placement is fully controlled by the caller.
 
