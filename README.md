@@ -1,14 +1,12 @@
 # Pan Tilt 100
 
-![Project Status](https://img.shields.io/badge/Status-WIP-yellow)
+![Project Status](https://img.shields.io/badge/Status-Active-brightgreen)
 ![ROS 2](https://img.shields.io/badge/ROS%202-Kilted%20(Ubuntu%2024.04)-blue?style=flat&logo=ros&logoSize=auto)
 [![Ask DeepWiki (Experimental)](https://deepwiki.com/badge.svg)](https://deepwiki.com/adityakamath/pantilt100)
 [![Blog](https://img.shields.io/badge/Blog-kamathrobotics.com-darkorange?style=flat&logo=hashnode&logoSize=auto)](https://kamathrobotics.com/pan-tilt-controls-using-ros-2)
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
 
->**⚠️ Disclaimer:** This package is integrated into [lekiwi_ros2](https://github.com/adityakamath/lekiwi_ros2) as a git submodule under `payloads/pantilt100/`. It is a work in progress and may not always be stable or fully functional. The documentation is AI generated, but then manually reviewed. Use with caution, and expect breaking changes.
-
-ROS 2 software stack for a 2-DOF pan-tilt camera mount using [SO-ARM100](https://github.com/TheRobotStudio/SO-ARM100) parts, [Feetech STS3215](https://www.feetechrc.com/2020-05-13_56655.html) servo motors and an [OAK-D S2](https://docs.luxonis.com/hardware/products/OAK-D%20S2) camera. Provides position control with joystick teleop, visual-inertial odometry (VIO) bringup, and an embeddable xacro module for integration into other robots.
+ROS 2 software stack for a 2-DOF pan-tilt camera mount using [SO-ARM100](https://github.com/TheRobotStudio/SO-ARM100) parts, [Feetech STS3215](https://www.feetechrc.com/2020-05-13_56655.html) servo motors and an [OAK-D S2](https://docs.luxonis.com/hardware/products/OAK-D%20S2) camera. Provides position control with joystick teleop, visual-inertial odometry (VIO) bringup, and an embeddable xacro module for integration into other robots like the [lekiwi_ros2](https://github.com/adityakamath/lekiwi_ros2) project.
 
 <p align="center">
   <img width="500" height="575" alt="Screenshot 2026-04-28 at 15 56 11" src="https://github.com/user-attachments/assets/c9520454-7523-44a7-bcb3-8b6428437759" />
@@ -35,7 +33,7 @@ Both motors are chained together on a single serial bus at 1 Mbaud, connected to
 
 ### Motor Calibration
 
-Each motor has a **center position** (in raw steps, 0–4095) that maps to 0 rad in the URDF. The defaults below match the reference hardware build; recalibrate if your physical assembly differs.
+Each motor has a **center position** (in raw steps, 0–4095) that maps to 0 rad in the URDF. The defaults below match my reference hardware build; recalibration is needed since each physical assembly will differ.
 
 | Joint | Parameter           | Default |
 |-------|---------------------|---------|
@@ -45,8 +43,8 @@ Each motor has a **center position** (in raw steps, 0–4095) that maps to 0 rad
 Update these permanently in [`pt100_control/config/urdf_config.yaml`](pt100_control/config/urdf_config.yaml):
 
 ```yaml
-pan_center_steps: 2100
-tilt_center_steps: 2700
+pan_center_steps: 2048
+tilt_center_steps: 2646
 ```
 
 ## Dependencies
@@ -55,6 +53,7 @@ tilt_center_steps: 2700
 - **[ros2_control](https://control.ros.org/)** — controller manager, joint state broadcaster, forward command controller
 - **[sts_hardware_interface](https://github.com/adityakamath/sts_hardware_interface)** — hardware interface for Feetech STS servo motors
 - **[depthai-ros](https://github.com/luxonis/depthai-ros)** — DepthAI ROS 2 driver for the OAK-D S2 Camera
+- **[cloudini](https://github.com/facontidavide/cloudini)** — high-performance point cloud compression library; required by `pt100_bringup` for the PCL compressor node (point cloud mode only)
 - **[joy_teleop](https://index.ros.org/p/joy_teleop/)** — joystick-to-topic bridge (included in this package's launch)
 
 > **⚠️ Joystick:** `joy_teleop` is included but the [`joy`](https://github.com/ros-drivers/joystick_drivers) node is **not** — it must be started separately (on the same or a networked device) before the system will respond to controller input:
@@ -82,15 +81,16 @@ Install [depthai-ros](https://docs.luxonis.com/software/ros/depthai-ros/) via ap
 sudo apt install ros-kilted-depthai-ros
 ```
 
-Then clone and build this package and its hardware interface dependency:
+Then clone and build this package and its dependencies:
 
 ```bash
 cd <your workspace>/src
 git clone https://github.com/adityakamath/pantilt100.git
 git clone https://github.com/adityakamath/sts_hardware_interface.git
+git clone https://github.com/facontidavide/cloudini.git
 
 cd ..
-colcon build --packages-select pt100_description pt100_control pt100_bringup sts_hardware_interface
+colcon build --packages-select cloudini_lib cloudini_ros pt100_description pt100_control pt100_bringup sts_hardware_interface
 
 source install/setup.bash
 ```
@@ -182,6 +182,8 @@ pantilt100/
   ├── config/
   │   ├── oakd_vio.yaml            # OAK-D S2: RGBD pipeline + VIO at 60 Hz, no point cloud
   │   └── oakd_vio_pcl.yaml        # OAK-D S2: same as above with RGBD point cloud enabled
+  ├── src/
+  │   └── pcl_compressor_node.cpp  # Cloudini PCL compression composable node (point cloud mode)
   └── launch/
     ├── pt100.launch.py            # Full PT100 system: includes pt100_control + oakd
     └── oakd.launch.py             # OAK-D S2 camera driver only
@@ -199,6 +201,7 @@ The URDF is split across several xacro files with distinct responsibilities:
 | `pantilt.control.xacro`  | Launch args, motor velocity/torque limits, joint limits, `ros2_control` block |
 | `pantilt.joints.xacro`   | Pan/tilt joint declarations as a macro — for embedding on a shared serial bus |
 | `pt100.module.xacro`     | All links and joints wrapped in a `pt100_module` xacro macro                  |
+| `oakd_s2.module.xacro`   | OAK-D S2 camera and IMU links as a reusable macro (`oakd_s2_camera`)          |
 | `pantilt.urdf.xacro`     | Standalone robot: creates `base_footprint`, instantiates the macro            |
 
 Both pan and tilt joints use `velocity="1e6"` in their URDF `<limit>` elements. See [Design](#design) for the reason.
@@ -227,7 +230,7 @@ Joystick axes map directly to **absolute** joint positions, not velocities. The 
 
 `pt100.launch.py` composes `pt100_control/pantilt.launch.py` and `oakd.launch.py` and forwards the relevant arguments to each.
 
-`oakd.launch.py` launches the OAK-D S2 as a composable node. Two pipeline configurations are available:
+`oakd.launch.py` launches the OAK-D S2 as a composable node container. When `pointcloud:=true`, a `PCLCompressorNode` is also loaded into the same container — it subscribes to `/oak/rgbd/points`, compresses using [cloudini](https://github.com/facontidavide/cloudini) at 1 mm resolution, and publishes to `/oak/rgbd/points/compressed`. Two pipeline configurations are available:
 
 | Config file       | Pipeline                                                        | Use case                        |
 |-------------------|-----------------------------------------------------------------|---------------------------------|
@@ -250,7 +253,9 @@ Set `DEPTHAI_DEBUG=1` in the environment before launching to enable debug-level 
 | `/oak/stereo/image_raw`          | `sensor_msgs/Image`                     | Published  | OAK-D S2 depth stream                                                            |
 | `/oak/imu/data`                  | `sensor_msgs/Imu`                       | Published  | OAK-D S2 IMU data                                                                |
 | `/oak/vio/transform`             | `geometry_msgs/TransformStamped`        | Published  | Visual-inertial odometry output                                                  |
-| `/diagnostics`                   | `diagnostic_msgs/DiagnosticArray`       | Published  | Per-joint motor health: temperature, voltage, current (when `diagnostics:=true`) |
+| `/oak/rgbd/points`               | `sensor_msgs/PointCloud2`               | Published  | Raw RGBD point cloud (only when `pointcloud:=true`)                              |
+| `/oak/rgbd/points/compressed`    | `point_cloud_interfaces/CompressedPointCloud2` | Published | Cloudini-compressed point cloud at 1 mm resolution (only when `pointcloud:=true`) |
+| `/base/diagnostics`              | `diagnostic_msgs/DiagnosticArray`       | Published  | Per-joint motor health: temperature, voltage, current (when `diagnostics:=true`) |
 
 ### Services
 
