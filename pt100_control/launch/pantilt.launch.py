@@ -8,179 +8,136 @@ This launch file starts:
     - joint_state_broadcaster
     - pantilt_controller
     - (optionally) motor diagnostics
-    - (optionally) joystick teleop
-Arguments are provided for hardware configuration and diagnostics.
+    - joystick teleop
+Hardware parameters are read from urdf_config.yaml; sts_serial_port and
+use_mock can be overridden on the command line (empty string = use yaml value).
 """
 
+import yaml
+
 from launch import LaunchDescription
-from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription, TimerAction
-from launch.conditions import IfCondition
+from launch.actions import DeclareLaunchArgument, GroupAction, IncludeLaunchDescription, OpaqueFunction, TimerAction
 from launch.launch_description_sources import PythonLaunchDescriptionSource
-from launch.substitutions import Command, FindExecutable, PathJoinSubstitution, LaunchConfiguration
-from launch_ros.actions import Node
+from launch.substitutions import Command, FindExecutable, LaunchConfiguration, PathJoinSubstitution
+from launch_ros.actions import Node, SetRemap
 from launch_ros.parameter_descriptions import ParameterValue
 from launch_ros.substitutions import FindPackageShare
 
-def generate_launch_description():
-    """
-    Generate launch description for Pan-Tilt100 control stack.
-    Declares arguments for hardware, diagnostics, and launches nodes in sequence.
-    """
 
-    # Declare launch arguments for hardware and diagnostics
+def launch_setup(context):
+    serial_port  = LaunchConfiguration('sts_serial_port').perform(context)
+    use_mock     = LaunchConfiguration('use_mock').perform(context)
+    diagnostics  = LaunchConfiguration('diagnostics').perform(context)
+    use_sim_time = LaunchConfiguration('use_sim_time').perform(context).lower() in ('true', '1')
+
+    pkg_ctrl = FindPackageShare('pt100_control').perform(context)
+    pkg_desc = FindPackageShare('pt100_description').perform(context)
+    xacro    = FindExecutable(name='xacro').perform(context)
+
+    _cfg = yaml.safe_load(open(f'{pkg_ctrl}/config/urdf_config.yaml'))
+    final_serial_port = serial_port if serial_port else _cfg['serial_port']
+    final_use_mock    = use_mock if use_mock else str(_cfg['use_mock']).lower()
+
+    xacro_cmd = (
+        f'{xacro} {pkg_desc}/urdf/pantilt.urdf.xacro'
+        f' serial_port:={final_serial_port}'
+        f' use_mock:={final_use_mock}'
+        f' baud_rate:={_cfg["baud_rate"]}'
+        f' use_sync_write:={str(_cfg["use_sync_write"]).lower()}'
+        f' pan_motor_id:={_cfg["pan_motor_id"]}'
+        f' tilt_motor_id:={_cfg["tilt_motor_id"]}'
+        f' pan_center_steps:={_cfg["pan_center_steps"]}'
+        f' tilt_center_steps:={_cfg["tilt_center_steps"]}'
+        f' sts_max_velocity_steps:={_cfg["sts_max_velocity_steps"]}'
+        f' proportional_vel_max:={_cfg["proportional_vel_max"]}'
+        f' pan_joint_lower:={_cfg["pan_joint_lower"]}'
+        f' pan_joint_upper:={_cfg["pan_joint_upper"]}'
+        f' tilt_joint_lower:={_cfg["tilt_joint_lower"]}'
+        f' tilt_joint_upper:={_cfg["tilt_joint_upper"]}'
+    )
+
+    robot_description = {
+        'robot_description': ParameterValue(Command([xacro_cmd]), value_type=str)
+    }
+
+    robot_state_publisher = Node(
+        package='robot_state_publisher',
+        executable='robot_state_publisher',
+        output='log',
+        parameters=[robot_description, {'use_sim_time': use_sim_time}],
+        name='robot_state_publisher',
+        emulate_tty=True,
+        arguments=['--ros-args', '--log-level', 'WARN'],
+    )
+
+    controller_manager = Node(
+        package='controller_manager',
+        executable='ros2_control_node',
+        parameters=[robot_description, f'{pkg_ctrl}/config/pantilt_config.yaml', {'use_sim_time': use_sim_time}],
+        remappings=[('/diagnostics', '/controller_manager/diagnostics')],
+        output='log',
+        emulate_tty=True,
+        arguments=['--ros-args', '--log-level', 'rclcpp:=ERROR'],
+    )
+
+    teleop_launch = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource([
+            PathJoinSubstitution([FindPackageShare('pt100_control'), 'launch', 'teleop.launch.py'])
+        ]),
+        launch_arguments={'use_sim_time': str(use_sim_time).lower()}.items(),
+    )
+
+    motor_diagnostics = GroupAction([
+        SetRemap('/diagnostics', '/base/diagnostics'),
+        IncludeLaunchDescription(
+            PythonLaunchDescriptionSource([
+                PathJoinSubstitution([FindPackageShare('sts_hardware_interface'), 'launch', 'motor_diagnostics.launch.py'])
+            ])
+        ),
+    ])
+
+    actions = [
+        robot_state_publisher,
+        controller_manager,
+        TimerAction(period=2.0, actions=[Node(
+            package='controller_manager', executable='spawner',
+            arguments=['joint_state_broadcaster', '-c', '/controller_manager'], output='both',
+        )]),
+        TimerAction(period=2.5, actions=[Node(
+            package='controller_manager', executable='spawner',
+            arguments=['pantilt_controller', '-c', '/controller_manager'], output='both',
+        )]),
+        teleop_launch,
+    ]
+
+    if diagnostics.lower() == 'true':
+        actions.append(TimerAction(period=3.0, actions=[motor_diagnostics]))
+
+    return actions
+
+
+def generate_launch_description():
     declared_arguments = [
         DeclareLaunchArgument(
-            "serial_port",
-            default_value="/dev/ttySERVO",
-            description="Serial port for STS motor communication",
+            'sts_serial_port',
+            default_value='',
+            description='Serial port override; empty string means use urdf_config.yaml value',
         ),
         DeclareLaunchArgument(
-            "use_mock",
-            default_value="false",
-            description="Use mock/simulation mode (no hardware required)",
+            'use_mock',
+            default_value='',
+            description='Mock mode override (true/false); empty string means use urdf_config.yaml value',
         ),
         DeclareLaunchArgument(
-            "use_sync_write",
-            default_value="true",
-            description="Enable SyncWrite for coordinated motion",
+            'diagnostics',
+            default_value='true',
+            description='Launch motor diagnostics node',
         ),
         DeclareLaunchArgument(
-            "diagnostics",
-            default_value="true",
-            description="Launch motor diagnostics node (if true)",
-        ),
-        DeclareLaunchArgument(
-            "pan_center_steps",
-            default_value="2048",
-            description="Raw step value (0-4095) that maps to 0 rad on pan axis",
-        ),
-        DeclareLaunchArgument(
-            "tilt_center_steps",
-            default_value="2646",
-            description="Raw step value (0-4095) that maps to 0 rad on tilt axis",
+            'use_sim_time',
+            default_value='false',
+            description='Use /clock from a simulator instead of system time.',
         ),
     ]
 
-    # Generate robot_description from xacro
-    robot_description_content = Command(
-        [
-            PathJoinSubstitution([FindExecutable(name="xacro")]),
-            " ",
-            PathJoinSubstitution([
-                FindPackageShare("pt100_description"),
-                "urdf",
-                "pantilt.urdf.xacro",
-            ]),
-            " ",
-            "serial_port:=",
-            LaunchConfiguration("serial_port"),
-            " ",
-            "use_mock:=",
-            LaunchConfiguration("use_mock"),
-            " ",
-            "use_sync_write:=",
-            LaunchConfiguration("use_sync_write"),
-            " ",
-            "pan_center_steps:=",
-            LaunchConfiguration("pan_center_steps"),
-            " ",
-            "tilt_center_steps:=",
-            LaunchConfiguration("tilt_center_steps"),
-        ]
-    )
-    robot_description = {
-        "robot_description": ParameterValue(robot_description_content, value_type=str)
-    }
-
-    controller_config = PathJoinSubstitution(
-        [FindPackageShare("pt100_control"), "config", "pantilt_config.yaml"]
-    )
-
-    # Publishes robot state (TFs, joint states)
-    robot_state_publisher_node = Node(
-        package="robot_state_publisher",
-        executable="robot_state_publisher",
-        output="log",
-        parameters=[robot_description],
-        name="robot_state_publisher",
-        emulate_tty=True,
-        arguments=["--ros-args", "--log-level", "WARN"],
-    )
-
-    # Main ros2_control node
-    controller_manager_node = Node(
-        package="controller_manager",
-        executable="ros2_control_node",
-        parameters=[robot_description, controller_config],
-        output="log",
-        emulate_tty=True,
-    )
-
-    # Spawns joint_state_broadcaster controller
-    joint_state_broadcaster_spawner = Node(
-        package="controller_manager",
-        executable="spawner",
-        arguments=["joint_state_broadcaster", "-c", "/controller_manager"],
-        output="both",
-    )
-
-    # Spawns pantilt_controller
-    pantilt_controller_spawner = Node(
-        package="controller_manager",
-        executable="spawner",
-        arguments=["pantilt_controller", "-c", "/controller_manager"],
-        output="both",
-    )
-
-    # Optionally include diagnostics launch file
-    diagnostics_launch = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource(
-            [
-                PathJoinSubstitution([
-                    FindPackageShare("sts_hardware_interface"),
-                    "launch",
-                    "motor_diagnostics.launch.py",
-                ])
-            ]
-        )
-    )
-
-    # Optionally include joystick teleop launch file
-    teleop_launch = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource(
-            [
-                PathJoinSubstitution([
-                    FindPackageShare("pt100_control"),
-                    "launch",
-                    "teleop.launch.py",
-                ])
-            ]
-        )
-    )
-
-    # Delay controller spawners and diagnostics for proper startup sequence
-    delayed_joint_state_broadcaster_spawner = TimerAction(
-        period=2.0,
-        actions=[joint_state_broadcaster_spawner],
-    )
-
-    delayed_pantilt_controller_spawner = TimerAction(
-        period=2.5,
-        actions=[pantilt_controller_spawner],
-    )
-
-    delayed_diagnostics_launch = TimerAction(
-        period=3.0,
-        actions=[diagnostics_launch],
-        condition=IfCondition(LaunchConfiguration('diagnostics')),
-    )
-
-    # Compose and return the launch description
-    return LaunchDescription(declared_arguments + [
-        robot_state_publisher_node,
-        controller_manager_node,
-        delayed_joint_state_broadcaster_spawner,
-        delayed_pantilt_controller_spawner,
-        delayed_diagnostics_launch,
-        teleop_launch,
-    ])
+    return LaunchDescription(declared_arguments + [OpaqueFunction(function=launch_setup)])

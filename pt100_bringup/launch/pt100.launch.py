@@ -23,9 +23,14 @@ def generate_launch_description():
     # Declare launch arguments for bringup
     declared_arguments = [
         DeclareLaunchArgument(
+            "sts_serial_port",
+            default_value="",
+            description="Serial port override; empty string means use urdf_config.yaml value",
+        ),
+        DeclareLaunchArgument(
             "use_mock",
-            default_value="false",
-            description="Use mock/simulation mode (no hardware required)",
+            default_value="",
+            description="Mock mode override (true/false); empty string means use urdf_config.yaml value",
         ),
         DeclareLaunchArgument(
             "diagnostics",
@@ -36,6 +41,11 @@ def generate_launch_description():
             "pointcloud",
             default_value="false",
             description="Enable RGBD point cloud pipeline.",
+        ),
+        DeclareLaunchArgument(
+            "use_sim_time",
+            default_value="false",
+            description="Use /clock from a simulator instead of system time.",
         ),
     ]
 
@@ -49,8 +59,10 @@ def generate_launch_description():
             ])
         ),
         launch_arguments={
+            "sts_serial_port": LaunchConfiguration("sts_serial_port"),
             "use_mock": LaunchConfiguration("use_mock"),
             "diagnostics": LaunchConfiguration("diagnostics"),
+            "use_sim_time": LaunchConfiguration("use_sim_time"),
         }.items()
     )
 

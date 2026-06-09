@@ -6,7 +6,8 @@ Subscribes to /joy and publishes Float64MultiArray position commands to /pantilt
 """
 
 from launch import LaunchDescription
-from launch.substitutions import PathJoinSubstitution
+from launch.actions import DeclareLaunchArgument
+from launch.substitutions import LaunchConfiguration, PathJoinSubstitution
 from launch_ros.actions import Node
 from launch_ros.substitutions import FindPackageShare
 
@@ -20,8 +21,15 @@ def generate_launch_description():
         package="joy_teleop",
         executable="joy_teleop",
         name="joy_teleop",
-        output="log",
-        parameters=[teleop_config],
+        output="screen",
+        parameters=[teleop_config, {"use_sim_time": LaunchConfiguration("use_sim_time")}],
     )
 
-    return LaunchDescription([teleop_node])
+    return LaunchDescription([
+        DeclareLaunchArgument(
+            "use_sim_time",
+            default_value="false",
+            description="Use /clock from a simulator instead of system time.",
+        ),
+        teleop_node,
+    ])

@@ -43,7 +43,16 @@
     oak.rgb.image_raw.enable_pub_plugins:
       - image_transport/raw
       - image_transport/compressed
-      - image_transport/theora
     oak.stereo.image_raw.enable_pub_plugins:
       - image_transport/raw
       - image_transport/compressedDepth
+
+# Cloudini point cloud compression configuration
+# Compresses /oak/rgbd/points → /oak/rgbd/points/compressed
+# Using 1mm resolution (conservative for depth cameras, ±0.5mm max quantization error)
+/cloudini_compressor:
+  ros__parameters:
+    compressing: true
+    topic_input: "/oak/rgbd/points"
+    topic_output: "/oak/rgbd/points/compressed"
+    resolution: 0.001  # 1mm (recommended), 0.01 for visualization, 0.0001 for paranoid mode

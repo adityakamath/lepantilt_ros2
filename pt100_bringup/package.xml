@@ -9,7 +9,16 @@
 
   <buildtool_depend>ament_cmake</buildtool_depend>
 
+  <!-- Build dependencies for PCL compressor composable node -->
+  <depend>rclcpp</depend>
+  <depend>rclcpp_components</depend>
+  <depend>sensor_msgs</depend>
+  <depend>point_cloud_interfaces</depend>
+  <depend>cloudini_lib</depend>
+  <depend>cloudini_ros</depend>
+
   <!-- Runtime dependencies for launch files -->
+  <exec_depend>pt100_control</exec_depend>
   <exec_depend>depthai_ros_driver</exec_depend>
 
   <test_depend>ament_lint_auto</test_depend>
@@ -19,5 +28,3 @@
     <build_type>ament_cmake</build_type>
   </export>
 </package>
-
-

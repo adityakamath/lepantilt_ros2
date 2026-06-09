@@ -1,28 +1,36 @@
 <?xml version="1.0"?>
 <robot xmlns:xacro="http://www.ros.org/wiki/xacro">
-  
+
   <!-- Arguments (externally settable) -->
-  <xacro:arg name="serial_port"       default="/dev/ttyACM0"/>
-  <xacro:arg name="baud_rate"         default="1000000"/>
-  <xacro:arg name="use_mock"          default="false"/>
-  <xacro:arg name="use_sync_write"    default="true"/>
-  <xacro:arg name="pan_motor_id"      default="1"/>
-  <xacro:arg name="tilt_motor_id"     default="2"/>
-  <xacro:arg name="pan_center_steps"  default="2048"/>
-  <xacro:arg name="tilt_center_steps" default="2048"/>
+  <xacro:arg name="serial_port"            default="/dev/ttySERVO"/>
+  <xacro:arg name="baud_rate"              default="1000000"/>
+  <xacro:arg name="use_mock"               default="false"/>
+  <xacro:arg name="use_sync_write"         default="true"/>
+  <xacro:arg name="pan_motor_id"           default="1"/>
+  <xacro:arg name="tilt_motor_id"          default="2"/>
+  <xacro:arg name="pan_center_steps"       default="2048"/>
+  <xacro:arg name="tilt_center_steps"      default="2646"/>
+  <xacro:arg name="sts_max_velocity_steps" default="3400"/>   <!-- STS3215=3400, STS3032=2900, STS3235=3400 -->
+  <xacro:arg name="proportional_vel_max"   default="0"/>      <!-- [0-max_velocity_steps]; 0 = each joint uses commanded velocity -->
+  <xacro:arg name="pan_joint_lower"        default="-1.5708"/>  <!-- rad, default -π/2 -->
+  <xacro:arg name="pan_joint_upper"        default="1.5708"/>   <!-- rad, default +π/2 -->
+  <xacro:arg name="tilt_joint_lower"       default="-1.5708"/>  <!-- rad, default -π/2 -->
+  <xacro:arg name="tilt_joint_upper"       default="1.5708"/>   <!-- rad, default +π/2 -->
 
-  <!-- Motor-specific parameter (STS3215 default) -->
-  <xacro:property name="pantilt_operating_mode" default="0"/>  <!-- Position mode -->
-  <xacro:property name="sts_max_velocity_steps" value="3400"/>  <!-- Max hardware velocity in steps/s (absolute motor limit, do not exceed) -->
-  <xacro:property name="max_velocity_steps" value="${int(sts_max_velocity_steps * 0.85)}"/> <!-- steps/second (85% of hardware max, 15% safety margin) -->
-  <xacro:property name="max_velocity_rads" value="${max_velocity_steps*2*pi/4096}"/> <!-- rad/s -->
-  <xacro:property name="max_torque_nm" value="2.942"/>  <!-- N⋅m (30 kgf⋅cm for STS3215) -->
+  <!-- Hardware velocity ceiling — defined before <ros2_control> because the hardware
+       plugin param references it directly. pt100_joints receives the same value so
+       joint velocity limits stay consistent with what the interface is configured to enforce. -->
+  <xacro:property name="sts_max_velocity_steps" value="$(arg sts_max_velocity_steps)"/>
 
-  <!-- Pan and Tilt joint limits -->
-  <xacro:property name="pan_joint_lower" value="${-pi/2}"/>
-  <xacro:property name="pan_joint_upper" value="${pi/2}"/>
-  <xacro:property name="tilt_joint_lower" value="${-pi/2}"/>
-  <xacro:property name="tilt_joint_upper" value="${pi/2}"/>
+  <!-- Torque limit and joint limits as top-level properties — required by pt100.module.xacro
+       for the URDF <limit> elements on the revolute joints. -->
+  <xacro:property name="max_torque_nm"    value="2.942"/>  <!-- N⋅m (30 kgf⋅cm for STS3215) -->
+  <xacro:property name="pan_joint_lower"  value="$(arg pan_joint_lower)"/>
+  <xacro:property name="pan_joint_upper"  value="$(arg pan_joint_upper)"/>
+  <xacro:property name="tilt_joint_lower" value="$(arg tilt_joint_lower)"/>
+  <xacro:property name="tilt_joint_upper" value="$(arg tilt_joint_upper)"/>
+
+  <xacro:include filename="$(find pt100_description)/urdf/pantilt.joints.xacro"/>
 
   <!-- ROS 2 CONTROL -->
   <ros2_control name="pt100_control" type="system">
@@ -34,44 +42,20 @@
       <param name="use_sync_write">$(arg use_sync_write)</param>
       <param name="enable_mock_mode">$(arg use_mock)</param>
       <param name="max_velocity_steps">${sts_max_velocity_steps}</param>
+      <param name="proportional_vel_max">$(arg proportional_vel_max)</param>
       <param name="reset_states_on_activate">true</param>
     </hardware>
 
-    <!-- Pan axis: rotates the payload around Z (Motor ID ${pan_motor_id}) -->
-    <joint name="pan_joint">
-      <param name="motor_id">$(arg pan_motor_id)</param>
-      <param name="operating_mode">${pantilt_operating_mode}</param>
-      <param name="min_position">${pan_joint_lower}</param>
-      <param name="max_position">${pan_joint_upper}</param>
-      <param name="max_velocity">${max_velocity_rads}</param>
-      <param name="position_center_steps">$(arg pan_center_steps)</param>
-      <command_interface name="position"/>
-      <state_interface name="position"/>
-      <state_interface name="velocity"/>
-      <state_interface name="effort"/>
-      <state_interface name="voltage"/>
-      <state_interface name="temperature"/>
-      <state_interface name="current"/>
-      <state_interface name="is_moving"/>
-    </joint>
-
-    <!-- Tilt axis: rotates the payload around Y (Motor ID ${tilt_motor_id}) -->
-    <joint name="tilt_joint">
-      <param name="motor_id">$(arg tilt_motor_id)</param>
-      <param name="operating_mode">${pantilt_operating_mode}</param>
-      <param name="min_position">${tilt_joint_lower}</param>
-      <param name="max_position">${tilt_joint_upper}</param>
-      <param name="max_velocity">${max_velocity_rads}</param>
-      <param name="position_center_steps">$(arg tilt_center_steps)</param>
-      <command_interface name="position"/>
-      <state_interface name="position"/>
-      <state_interface name="velocity"/>
-      <state_interface name="effort"/>
-      <state_interface name="voltage"/>
-      <state_interface name="temperature"/>
-      <state_interface name="current"/>
-      <state_interface name="is_moving"/>
-    </joint>
+    <xacro:pt100_joints
+        pan_motor_id="$(arg pan_motor_id)"
+        tilt_motor_id="$(arg tilt_motor_id)"
+        pan_center_steps="$(arg pan_center_steps)"
+        tilt_center_steps="$(arg tilt_center_steps)"
+        sts_max_velocity_steps="${sts_max_velocity_steps}"
+        pan_joint_lower="${pan_joint_lower}"
+        pan_joint_upper="${pan_joint_upper}"
+        tilt_joint_lower="${tilt_joint_lower}"
+        tilt_joint_upper="${tilt_joint_upper}"/>
   </ros2_control>
 
 </robot>

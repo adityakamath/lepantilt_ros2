@@ -1,0 +1,73 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+  <!--
+    pt100_joints macro — ros2_control joint declarations for the PT100 pan-tilt.
+
+    Intended for embedding into a host robot's <ros2_control> block when the
+    PT100 shares the host's serial bus (and therefore its hardware interface).
+    For standalone use, pantilt.control.xacro wraps this in its own <ros2_control>
+    block with the STSHardwareInterface plugin.
+
+    Params:
+      pan_motor_id          — STS3215 motor ID for pan axis
+      tilt_motor_id         — STS3215 motor ID for tilt axis
+      pan_center_steps      — raw step value (0–4095) for pan centre position
+      tilt_center_steps     — raw step value (0–4095) for tilt centre position
+      sts_max_velocity_steps — hardware velocity ceiling in steps/s; must match
+                               the value given to the hardware interface plugin
+  -->
+  <xacro:macro name="pt100_joints" params="
+      pan_motor_id:=1
+      tilt_motor_id:=2
+      pan_center_steps:=2048
+      tilt_center_steps:=2646
+      sts_max_velocity_steps:=3400
+      pan_joint_lower:=-1.5708
+      pan_joint_upper:=1.5708
+      tilt_joint_lower:=-1.5708
+      tilt_joint_upper:=1.5708">
+
+    <!-- 85% of hardware max — 15% safety margin; motor firmware handles profiling -->
+    <xacro:property name="pt100_max_velocity_steps" value="${int(sts_max_velocity_steps * 0.85)}"/>
+    <xacro:property name="pt100_max_velocity_rads"  value="${pt100_max_velocity_steps * 2 * pi / 4096}"/>
+
+    <!-- Pan axis: rotates the payload around Z -->
+    <joint name="pan_joint">
+      <param name="motor_id">${pan_motor_id}</param>
+      <param name="operating_mode">0</param>
+      <param name="min_position">${pan_joint_lower}</param>
+      <param name="max_position">${pan_joint_upper}</param>
+      <param name="max_velocity">${pt100_max_velocity_rads}</param>
+      <param name="position_center_steps">${pan_center_steps}</param>
+      <command_interface name="position"/>
+      <state_interface name="position"/>
+      <state_interface name="velocity"/>
+      <state_interface name="effort"/>
+      <state_interface name="voltage"/>
+      <state_interface name="temperature"/>
+      <state_interface name="current"/>
+      <state_interface name="is_moving"/>
+    </joint>
+
+    <!-- Tilt axis: rotates the payload around Y -->
+    <joint name="tilt_joint">
+      <param name="motor_id">${tilt_motor_id}</param>
+      <param name="operating_mode">0</param>
+      <param name="min_position">${tilt_joint_lower}</param>
+      <param name="max_position">${tilt_joint_upper}</param>
+      <param name="max_velocity">${pt100_max_velocity_rads}</param>
+      <param name="position_center_steps">${tilt_center_steps}</param>
+      <command_interface name="position"/>
+      <state_interface name="position"/>
+      <state_interface name="velocity"/>
+      <state_interface name="effort"/>
+      <state_interface name="voltage"/>
+      <state_interface name="temperature"/>
+      <state_interface name="current"/>
+      <state_interface name="is_moving"/>
+    </joint>
+
+  </xacro:macro>
+
+</robot>

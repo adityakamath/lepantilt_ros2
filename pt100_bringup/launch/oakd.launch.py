@@ -18,18 +18,18 @@ def generate_launch_description():
         DeclareLaunchArgument(
             "pointcloud",
             default_value="false",
-            description="Use vio_pcl.yaml (with RGBD point cloud) instead of vio.yaml.",
+            description="Use oakd_vio_pcl.yaml (with RGBD point cloud) instead of oakd_vio.yaml.",
         ),
     ]
 
     def launch_setup(context, *_args, **_kwargs):
-        """Select vio.yaml or vio_pcl.yaml based on the pointcloud arg and start the OAK-D composable node container."""
+        """Select oakd_vio.yaml or oakd_vio_pcl.yaml based on the pointcloud arg and start the OAK-D composable node container."""
         log_level = "info"
         if context.environment.get("DEPTHAI_DEBUG") == "1":
             log_level = "debug"
 
         pointcloud = LaunchConfiguration("pointcloud").perform(context) == "true"
-        config_file = "vio_pcl.yaml" if pointcloud else "vio.yaml"
+        config_file = "oakd_vio_pcl.yaml" if pointcloud else "oakd_vio.yaml"
         params_file = ParameterFile(
             os.path.join(
                 get_package_share_directory("pt100_bringup"),
@@ -39,26 +39,40 @@ def generate_launch_description():
             allow_substs=True,
         )
 
+        # Build composable node list - always include OAK-D driver
+        composable_nodes = [
+            ComposableNode(
+                package="depthai_ros_driver",
+                plugin="depthai_ros_driver::Driver",
+                name="oak",
+                parameters=[params_file, {
+                    "driver": {
+                        "i_tf_parent_frame": "tilt_link",
+                        "i_tf_camera_model": "OAK-D-S2",
+                        "i_tf_base_frame": "oak_link",
+                    }
+                }],
+            )
+        ]
+
+        # Add cloudini compression when pointcloud mode is enabled
+        if pointcloud:
+            composable_nodes.append(
+                ComposableNode(
+                    package="pt100_bringup",
+                    plugin="pt100_bringup::PCLCompressorNode",
+                    name="cloudini_compressor",
+                    parameters=[params_file],  # Load config from same YAML file
+                )
+            )
+
         return [
             ComposableNodeContainer(
                 name="oak_container",
                 namespace="",
                 package="rclcpp_components",
                 executable="component_container",
-                composable_node_descriptions=[
-                    ComposableNode(
-                        package="depthai_ros_driver",
-                        plugin="depthai_ros_driver::Driver",
-                        name="oak",
-                        parameters=[params_file, {
-                            "driver": {
-                                "i_tf_parent_frame": "tilt_link",
-                                "i_tf_camera_model": "OAK-D-S2",
-                                "i_tf_base_frame": "oak_link",
-                            }
-                        }],
-                    )
-                ],
+                composable_node_descriptions=composable_nodes,
                 arguments=["--ros-args", "--log-level", log_level],
                 output="both",
             ),
