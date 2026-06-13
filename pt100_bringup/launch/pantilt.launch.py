@@ -50,7 +50,7 @@ def generate_launch_description():
     ]
 
     # Include the PanTilt control stack launch file, forwarding use_mock and diagnostics
-    pt100_control_launch = IncludeLaunchDescription(
+    pantilt_control_launch = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
             PathJoinSubstitution([
                 FindPackageShare("pt100_control"),
@@ -82,6 +82,6 @@ def generate_launch_description():
 
     # Return the composed launch description
     return LaunchDescription(declared_arguments + [
-        pt100_control_launch,
+        pantilt_control_launch,
         oakd_launch
     ])

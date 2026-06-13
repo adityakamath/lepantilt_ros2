@@ -4,7 +4,7 @@
   <xacro:include filename="$(find pt100_description)/urdf/pantilt.common.xacro"/>
   <xacro:include filename="$(find pt100_description)/urdf/oakd_s2.module.xacro"/>
 
-  <xacro:macro name="pt100_module" params="parent *origin">
+  <xacro:macro name="pantilt_module" params="parent *origin">
 
     <!-- Material definitions (referenced by links below) -->
     <material name="light_grey">
@@ -29,9 +29,9 @@
         <inertia ixx="0.01" ixy="0" ixz="0" iyy="0.01" iyz="0" izz="0.01"/>
       </inertial>
       <visual>
-        <origin xyz="0 0 0" rpy="0 0 ${pantilt_offset_rz}"/>
+        <origin xyz="${pantilt_base_mesh_xyz}" rpy="${pantilt_base_mesh_rpy}"/>
         <geometry>
-          <mesh filename="package://pt100_description/meshes/pantilt_base.stl"/>
+          <mesh filename="package://pt100_description/meshes/${pantilt_base_mesh}"/>
         </geometry>
         <material name="light_grey"/>
       </visual>
@@ -43,9 +43,9 @@
         <material name="charcoal"/>
       </visual>
       <collision>
-        <origin xyz="0 0 0" rpy="0 0 ${pantilt_offset_rz}"/>
+        <origin xyz="${pantilt_base_mesh_xyz}" rpy="${pantilt_base_mesh_rpy}"/>
         <geometry>
-          <mesh filename="package://pt100_description/meshes/pantilt_base.stl"/>
+          <mesh filename="package://pt100_description/meshes/${pantilt_base_mesh}"/>
         </geometry>
       </collision>
     </link>
@@ -58,9 +58,9 @@
         <inertia ixx="5.94278e-05" ixy="0" ixz="0" iyy="5.89975e-05" iyz="0" izz="3.13712e-05"/>
       </inertial>
       <visual>
-        <origin xyz="0 0 0" rpy="${pan_offset_rx} 0 ${pan_offset_rz}"/>
+        <origin xyz="${pan_joint_mesh_xyz}" rpy="${pan_joint_mesh_rpy}"/>
         <geometry>
-          <mesh filename="package://pt100_description/meshes/pan_joint.stl"/>
+          <mesh filename="package://pt100_description/meshes/${pan_joint_mesh}"/>
         </geometry>
         <material name="light_grey"/>
       </visual>
@@ -72,9 +72,9 @@
         <material name="charcoal"/>
       </visual>
       <collision>
-        <origin xyz="0 0 0" rpy="${pan_offset_rx} 0 ${pan_offset_rz}"/>
+        <origin xyz="${pan_joint_mesh_xyz}" rpy="${pan_joint_mesh_rpy}"/>
         <geometry>
-          <mesh filename="package://pt100_description/meshes/pan_joint.stl"/>
+          <mesh filename="package://pt100_description/meshes/${pan_joint_mesh}"/>
         </geometry>
       </collision>
     </link>
@@ -89,14 +89,14 @@
       <visual>
         <origin xyz="${tilt_visual_x} ${tilt_visual_y} ${tilt_visual_z}" rpy="${tilt_offset_rx} ${tilt_offset_ry} 0"/>
         <geometry>
-          <mesh filename="package://pt100_description/meshes/tilt_joint.stl"/>
+          <mesh filename="package://pt100_description/meshes/tilt_joint_oakd_s2.stl"/>
         </geometry>
         <material name="light_grey"/>
       </visual>
       <collision>
         <origin xyz="${tilt_visual_x} ${tilt_visual_y} ${tilt_visual_z}" rpy="${tilt_offset_rx} ${tilt_offset_ry} 0"/>
         <geometry>
-          <mesh filename="package://pt100_description/meshes/tilt_joint.stl"/>
+          <mesh filename="package://pt100_description/meshes/tilt_joint_oakd_s2.stl"/>
         </geometry>
       </collision>
     </link>

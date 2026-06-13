@@ -18,11 +18,11 @@
   <xacro:arg name="tilt_joint_upper"       default="1.5708"/>   <!-- rad, default +π/2 -->
 
   <!-- Hardware velocity ceiling — defined before <ros2_control> because the hardware
-       plugin param references it directly. pt100_joints receives the same value so
+       plugin param references it directly. pantilt_joints receives the same value so
        joint velocity limits stay consistent with what the interface is configured to enforce. -->
   <xacro:property name="sts_max_velocity_steps" value="$(arg sts_max_velocity_steps)"/>
 
-  <!-- Torque limit and joint limits as top-level properties — required by pt100.module.xacro
+  <!-- Torque limit and joint limits as top-level properties — required by pantilt.module.xacro
        for the URDF <limit> elements on the revolute joints. -->
   <xacro:property name="max_torque_nm"    value="2.942"/>  <!-- N⋅m (30 kgf⋅cm for STS3215) -->
   <xacro:property name="pan_joint_lower"  value="$(arg pan_joint_lower)"/>
@@ -33,7 +33,7 @@
   <xacro:include filename="$(find pt100_description)/urdf/pantilt.joints.xacro"/>
 
   <!-- ROS 2 CONTROL -->
-  <ros2_control name="pt100_control" type="system">
+  <ros2_control name="pantilt_control" type="system">
     <hardware>
       <plugin>sts_hardware_interface/STSHardwareInterface</plugin>
       <param name="serial_port">$(arg serial_port)</param>
@@ -46,7 +46,7 @@
       <param name="reset_states_on_activate">true</param>
     </hardware>
 
-    <xacro:pt100_joints
+    <xacro:pantilt_joints
         pan_motor_id="$(arg pan_motor_id)"
         tilt_motor_id="$(arg tilt_motor_id)"
         pan_center_steps="$(arg pan_center_steps)"

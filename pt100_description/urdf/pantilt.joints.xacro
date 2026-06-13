@@ -2,7 +2,7 @@
 <robot xmlns:xacro="http://www.ros.org/wiki/xacro">
 
   <!--
-    pt100_joints macro — ros2_control joint declarations for the PT100 pan-tilt.
+    pantilt_joints macro — ros2_control joint declarations for the PT100 pan-tilt.
 
     Intended for embedding into a host robot's <ros2_control> block when the
     PT100 shares the host's serial bus (and therefore its hardware interface).
@@ -17,7 +17,7 @@
       sts_max_velocity_steps — hardware velocity ceiling in steps/s; must match
                                the value given to the hardware interface plugin
   -->
-  <xacro:macro name="pt100_joints" params="
+  <xacro:macro name="pantilt_joints" params="
       pan_motor_id:=1
       tilt_motor_id:=2
       pan_center_steps:=2048
@@ -29,8 +29,8 @@
       tilt_joint_upper:=1.5708">
 
     <!-- 85% of hardware max — 15% safety margin; motor firmware handles profiling -->
-    <xacro:property name="pt100_max_velocity_steps" value="${int(sts_max_velocity_steps * 0.85)}"/>
-    <xacro:property name="pt100_max_velocity_rads"  value="${pt100_max_velocity_steps * 2 * pi / 4096}"/>
+    <xacro:property name="pantilt_max_velocity_steps" value="${int(sts_max_velocity_steps * 0.85)}"/>
+    <xacro:property name="pantilt_max_velocity_rads"  value="${pantilt_max_velocity_steps * 2 * pi / 4096}"/>
 
     <!-- Pan axis: rotates the payload around Z -->
     <joint name="pan_joint">
@@ -38,7 +38,7 @@
       <param name="operating_mode">0</param>
       <param name="min_position">${pan_joint_lower}</param>
       <param name="max_position">${pan_joint_upper}</param>
-      <param name="max_velocity">${pt100_max_velocity_rads}</param>
+      <param name="max_velocity">${pantilt_max_velocity_rads}</param>
       <param name="position_center_steps">${pan_center_steps}</param>
       <command_interface name="position"/>
       <state_interface name="position"/>
@@ -56,7 +56,7 @@
       <param name="operating_mode">0</param>
       <param name="min_position">${tilt_joint_lower}</param>
       <param name="max_position">${tilt_joint_upper}</param>
-      <param name="max_velocity">${pt100_max_velocity_rads}</param>
+      <param name="max_velocity">${pantilt_max_velocity_rads}</param>
       <param name="position_center_steps">${tilt_center_steps}</param>
       <command_interface name="position"/>
       <state_interface name="position"/>

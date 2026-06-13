@@ -132,7 +132,7 @@ ros2 launch pt100_bringup oakd.launch.py
 ### Full PT100 bringup (control + camera)
 
 ```bash
-ros2 launch pt100_bringup pt100.launch.py
+ros2 launch pt100_bringup pantilt.launch.py
 ```
 
 ### Mock control stack (no hardware required)
@@ -162,7 +162,7 @@ pantilt100/
 │   │   ├── pantilt.common.xacro   # Geometry constants and visual offsets
 │   │   ├── pantilt.control.xacro  # ros2_control block, motor parameters, joint limits
 │   │   ├── pantilt.joints.xacro   # Pan/tilt joint declarations as an embeddable macro (shared-bus use)
-│   │   ├── pt100.module.xacro     # Links and joints as an embeddable xacro macro
+│   │   ├── pantilt.module.xacro   # Links and joints as an embeddable xacro macro
 │   │   ├── pantilt.urdf.xacro     # Standalone entry point (includes all above)
 │   │   └── oakd_s2.module.xacro   # OAK-D S2 camera and IMU macro
 │   ├── meshes/                    # STL files for pan-tilt body and OAK-D S2
@@ -185,7 +185,7 @@ pantilt100/
   ├── src/
   │   └── pcl_compressor_node.cpp  # Cloudini PCL compression composable node (point cloud mode)
   └── launch/
-    ├── pt100.launch.py            # Full PT100 system: includes pt100_control + oakd
+    ├── pantilt.launch.py          # Full PT100 system: includes pt100_control + oakd
     └── oakd.launch.py             # OAK-D S2 camera driver only
 ```
 
@@ -200,7 +200,7 @@ The URDF is split across several xacro files with distinct responsibilities:
 | `pantilt.common.xacro`   | Visual offsets, mesh colours, joint origins, camera mount position            |
 | `pantilt.control.xacro`  | Launch args, motor velocity/torque limits, joint limits, `ros2_control` block |
 | `pantilt.joints.xacro`   | Pan/tilt joint declarations as a macro — for embedding on a shared serial bus |
-| `pt100.module.xacro`     | All links and joints wrapped in a `pt100_module` xacro macro                  |
+| `pantilt.module.xacro`   | All links and joints wrapped in a `pantilt_module` xacro macro                |
 | `oakd_s2.module.xacro`   | OAK-D S2 camera and IMU links as a reusable macro (`oakd_s2_camera`)          |
 | `pantilt.urdf.xacro`     | Standalone robot: creates `base_footprint`, instantiates the macro            |
 
@@ -228,7 +228,7 @@ Joystick axes map directly to **absolute** joint positions, not velocities. The 
 
 ### pt100_bringup
 
-`pt100.launch.py` composes `pt100_control/pantilt.launch.py` and `oakd.launch.py` and forwards the relevant arguments to each.
+`pt100_bringup/pantilt.launch.py` composes `pt100_control/pantilt.launch.py` and `oakd.launch.py` and forwards the relevant arguments to each.
 
 `oakd.launch.py` launches the OAK-D S2 as a composable node container. When `pointcloud:=true`, a `PCLCompressorNode` is also loaded into the same container — it subscribes to `/oak/rgbd/points`, compresses using [cloudini](https://github.com/facontidavide/cloudini) at 1 mm resolution, and publishes to `/oak/rgbd/points/compressed`. Two pipeline configurations are available:
 
@@ -281,20 +281,20 @@ The pan-tilt is designed to be mounted on another robot. Two embedding strategie
 
 ### Dedicated serial bus
 
-Include `pantilt.control.xacro` (which defines a standalone `<ros2_control>` hardware block) and `pt100.module.xacro` in the host robot's URDF:
+Include `pantilt.control.xacro` (which defines a standalone `<ros2_control>` hardware block) and `pantilt.module.xacro` in the host robot's URDF:
 
 ```xml
 <xacro:include filename="$(find pt100_description)/urdf/pantilt.control.xacro"/>
-<xacro:include filename="$(find pt100_description)/urdf/pt100.module.xacro"/>
+<xacro:include filename="$(find pt100_description)/urdf/pantilt.module.xacro"/>
 
-<xacro:pt100_module parent="base_link">
+<xacro:pantilt_module parent="base_link">
   <origin xyz="0.0 0.0 0.15" rpy="0 0 0"/>
-</xacro:pt100_module>
+</xacro:pantilt_module>
 ```
 
 ### Shared serial bus
 
-If all motors (host + pan-tilt) share one serial bus and a single `<ros2_control>` hardware block, include `pantilt.joints.xacro` instead and call the `pt100_joints` macro inside the host's existing hardware block:
+If all motors (host + pan-tilt) share one serial bus and a single `<ros2_control>` hardware block, include `pantilt.joints.xacro` instead and call the `pantilt_joints` macro inside the host's existing hardware block:
 
 ```xml
 <xacro:include filename="$(find pt100_description)/urdf/pantilt.joints.xacro"/>
@@ -302,7 +302,7 @@ If all motors (host + pan-tilt) share one serial bus and a single `<ros2_control
 <ros2_control name="host_control" type="system">
   <hardware>...</hardware>
   <!-- host joints here -->
-  <xacro:pt100_joints
+  <xacro:pantilt_joints
       pan_motor_id="1"
       tilt_motor_id="2"
       pan_center_steps="2048"
@@ -315,14 +315,14 @@ If all motors (host + pan-tilt) share one serial bus and a single `<ros2_control
 </ros2_control>
 ```
 
-Then include `pt100.module.xacro` separately for the visual model:
+Then include `pantilt.module.xacro` separately for the visual model:
 
 ```xml
-<xacro:include filename="$(find pt100_description)/urdf/pt100.module.xacro"/>
+<xacro:include filename="$(find pt100_description)/urdf/pantilt.module.xacro"/>
 
-<xacro:pt100_module parent="base_link">
+<xacro:pantilt_module parent="base_link">
   <origin xyz="0.0 0.0 0.15" rpy="0 0 0"/>
-</xacro:pt100_module>
+</xacro:pantilt_module>
 ```
 
 In the host robot's controller config, add the pantilt joint limits under `controller_manager.ros__parameters.joint_limits`:
@@ -349,7 +349,7 @@ controller_manager:
 
 The robot model is split into `common` (geometry), `control` (ros2_control + motor parameters), `joints` (embeddable joint declarations), and `module` (links and joints) rather than one flat URDF. This allows the pan-tilt to be embedded into any host robot — either with its own hardware block (`pantilt.control.xacro`) or as joint additions to an existing shared-bus block (`pantilt.joints.xacro`). The standalone `pantilt.urdf.xacro` is a thin wrapper that creates a `base_footprint` root and instantiates the macro.
 
-The `pt100_module` macro takes a `parent` link and an `origin` block. The `pantilt_mount_joint` inside the macro connects `parent` → `pantilt_base_link`, so placement is fully controlled by the caller.
+The `pantilt_module` macro takes a `parent` link and an `origin` block. The `pantilt_mount_joint` inside the macro connects `parent` → `pantilt_base_link`, so placement is fully controlled by the caller.
 
 ### Position control and velocity limits
 
@@ -374,7 +374,7 @@ Hold **L1** to enable motion. Without the deadman button held, `joy_teleop` does
 **Camera driver debug logging** — Set `DEPTHAI_DEBUG=1` before launching to enable verbose output from `depthai_ros_driver`:
 
 ```bash
-DEPTHAI_DEBUG=1 ros2 launch pt100_bringup pt100.launch.py
+DEPTHAI_DEBUG=1 ros2 launch pt100_bringup pantilt.launch.py
 ```
 
 **Motor not reaching commanded position** — If a motor is mechanically obstructed or the center step calibration is wrong, the reported position will diverge from the command. Check `/dynamic_joint_states` for elevated `effort` or `current` values, which indicate the motor is stalled.
