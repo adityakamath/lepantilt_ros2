@@ -1,8 +1,8 @@
 <?xml version="1.0"?>
 <robot xmlns:xacro="http://www.ros.org/wiki/xacro">
 
-  <xacro:include filename="$(find pt100_description)/urdf/pantilt.common.xacro"/>
-  <xacro:include filename="$(find pt100_description)/urdf/oakd_s2.module.xacro"/>
+  <xacro:include filename="$(find pt_description)/urdf/pantilt.common.xacro"/>
+  <xacro:include filename="$(find pt_description)/urdf/oakd_s2.module.xacro"/>
 
   <xacro:macro name="pantilt_module" params="parent *origin">
 
@@ -31,21 +31,21 @@
       <visual>
         <origin xyz="${pantilt_base_mesh_xyz}" rpy="${pantilt_base_mesh_rpy}"/>
         <geometry>
-          <mesh filename="package://pt100_description/meshes/${pantilt_base_mesh}"/>
+          <mesh filename="package://pt_description/meshes/${pantilt_base_mesh}"/>
         </geometry>
         <material name="light_grey"/>
       </visual>
       <visual>
         <origin xyz="0 0 0" rpy="0 0 ${pantilt_offset_rz}"/>
         <geometry>
-          <mesh filename="package://pt100_description/meshes/pan_motor.stl"/>
+          <mesh filename="package://pt_description/meshes/pan_motor.stl"/>
         </geometry>
         <material name="charcoal"/>
       </visual>
       <collision>
         <origin xyz="${pantilt_base_mesh_xyz}" rpy="${pantilt_base_mesh_rpy}"/>
         <geometry>
-          <mesh filename="package://pt100_description/meshes/${pantilt_base_mesh}"/>
+          <mesh filename="package://pt_description/meshes/${pantilt_base_mesh}"/>
         </geometry>
       </collision>
     </link>
@@ -60,21 +60,21 @@
       <visual>
         <origin xyz="${pan_joint_mesh_xyz}" rpy="${pan_joint_mesh_rpy}"/>
         <geometry>
-          <mesh filename="package://pt100_description/meshes/${pan_joint_mesh}"/>
+          <mesh filename="package://pt_description/meshes/${pan_joint_mesh}"/>
         </geometry>
         <material name="light_grey"/>
       </visual>
       <visual>
         <origin xyz="0 0 0" rpy="${pan_offset_rx} 0 ${pan_offset_rz}"/>
         <geometry>
-          <mesh filename="package://pt100_description/meshes/tilt_motor.stl"/>
+          <mesh filename="package://pt_description/meshes/tilt_motor.stl"/>
         </geometry>
         <material name="charcoal"/>
       </visual>
       <collision>
         <origin xyz="${pan_joint_mesh_xyz}" rpy="${pan_joint_mesh_rpy}"/>
         <geometry>
-          <mesh filename="package://pt100_description/meshes/${pan_joint_mesh}"/>
+          <mesh filename="package://pt_description/meshes/${pan_joint_mesh}"/>
         </geometry>
       </collision>
     </link>
@@ -89,14 +89,14 @@
       <visual>
         <origin xyz="${tilt_visual_x} ${tilt_visual_y} ${tilt_visual_z}" rpy="${tilt_offset_rx} ${tilt_offset_ry} 0"/>
         <geometry>
-          <mesh filename="package://pt100_description/meshes/tilt_joint_oakd_s2.stl"/>
+          <mesh filename="package://pt_description/meshes/tilt_joint_oakd_s2.stl"/>
         </geometry>
         <material name="light_grey"/>
       </visual>
       <collision>
         <origin xyz="${tilt_visual_x} ${tilt_visual_y} ${tilt_visual_z}" rpy="${tilt_offset_rx} ${tilt_offset_ry} 0"/>
         <geometry>
-          <mesh filename="package://pt100_description/meshes/tilt_joint_oakd_s2.stl"/>
+          <mesh filename="package://pt_description/meshes/tilt_joint_oakd_s2.stl"/>
         </geometry>
       </collision>
     </link>

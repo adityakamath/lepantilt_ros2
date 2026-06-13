@@ -3,8 +3,8 @@
 Main bringup launch file for the complete Pan Tilt 100 system: mechanism + camera.
 
 This launch file includes:
-    - pt100_control's pantilt.launch.py (robot control stack)
-    - pt100_bringup's oakd.launch.py (OAK-D camera)
+    - pt_control's pantilt.launch.py (robot control stack)
+    - pt_bringup's oakd.launch.py (OAK-D camera)
 It forwards relevant launch arguments to each included launch file.
 """
 
@@ -53,7 +53,7 @@ def generate_launch_description():
     pantilt_control_launch = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
             PathJoinSubstitution([
-                FindPackageShare("pt100_control"),
+                FindPackageShare("pt_control"),
                 "launch",
                 "pantilt.launch.py"
             ])
@@ -70,7 +70,7 @@ def generate_launch_description():
     oakd_launch = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
             PathJoinSubstitution([
-                FindPackageShare("pt100_bringup"),
+                FindPackageShare("pt_bringup"),
                 "launch",
                 "oakd.launch.py"
             ])

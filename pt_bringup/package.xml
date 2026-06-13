@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
 <package format="3">
-  <name>pt100_bringup</name>
+  <name>pt_bringup</name>
   <version>0.0.1</version>
   <description>Bringup package for Pan Tilt 100, including camera and control launch files.</description>
   <maintainer email="adityakamath@live.com">Aditya Kamath (Kamath Robotics)</maintainer>
@@ -18,7 +18,7 @@
   <depend>cloudini_ros</depend>
 
   <!-- Runtime dependencies for launch files -->
-  <exec_depend>pt100_control</exec_depend>
+  <exec_depend>pt_control</exec_depend>
   <exec_depend>depthai_ros_driver</exec_depend>
 
   <test_depend>ament_lint_auto</test_depend>

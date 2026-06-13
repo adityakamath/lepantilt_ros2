@@ -14,7 +14,7 @@ from launch_ros.substitutions import FindPackageShare
 def generate_launch_description():
     """Launch joy_teleop with the PT100 axis/button mapping config."""
     teleop_config = PathJoinSubstitution(
-        [FindPackageShare("pt100_control"), "config", "teleop_config.yaml"]
+        [FindPackageShare("pt_control"), "config", "teleop_config.yaml"]
     )
 
     teleop_node = Node(

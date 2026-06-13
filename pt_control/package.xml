@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
 <package format="3">
-  <name>pt100_control</name>
+  <name>pt_control</name>
   <version>0.1.0</version>
   <description>Command and control nodes for the Pan Tilt 100 mechanism using STS3215 servo motors</description>
   <maintainer email="adityakamath@live.com">Aditya Kamath (Kamath Robotics)</maintainer>
@@ -16,7 +16,7 @@
   <exec_depend>robot_state_publisher</exec_depend>
   <exec_depend>joy_teleop</exec_depend>
 
-  <exec_depend>pt100_description</exec_depend>
+  <exec_depend>pt_description</exec_depend>
   <exec_depend>sts_hardware_interface</exec_depend>
 
   <test_depend>ament_lint_auto</test_depend>

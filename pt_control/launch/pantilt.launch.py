@@ -30,8 +30,8 @@ def launch_setup(context):
     diagnostics  = LaunchConfiguration('diagnostics').perform(context)
     use_sim_time = LaunchConfiguration('use_sim_time').perform(context).lower() in ('true', '1')
 
-    pkg_ctrl = FindPackageShare('pt100_control').perform(context)
-    pkg_desc = FindPackageShare('pt100_description').perform(context)
+    pkg_ctrl = FindPackageShare('pt_control').perform(context)
+    pkg_desc = FindPackageShare('pt_description').perform(context)
     xacro    = FindExecutable(name='xacro').perform(context)
 
     _cfg = yaml.safe_load(open(f'{pkg_ctrl}/config/urdf_config.yaml'))
@@ -82,7 +82,7 @@ def launch_setup(context):
 
     teleop_launch = IncludeLaunchDescription(
         PythonLaunchDescriptionSource([
-            PathJoinSubstitution([FindPackageShare('pt100_control'), 'launch', 'teleop.launch.py'])
+            PathJoinSubstitution([FindPackageShare('pt_control'), 'launch', 'teleop.launch.py'])
         ]),
         launch_arguments={'use_sim_time': str(use_sim_time).lower()}.items(),
     )

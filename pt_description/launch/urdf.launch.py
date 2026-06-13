@@ -24,7 +24,7 @@ def generate_launch_description():
         PathJoinSubstitution([FindExecutable(name="xacro")]),
         " ",
         PathJoinSubstitution([
-            FindPackageShare("pt100_description"),
+            FindPackageShare("pt_description"),
             "urdf",
             "pantilt.urdf.xacro",
         ])

@@ -10,9 +10,9 @@
   <xacro:arg name="pan_center_steps" default="2048"/>
   <xacro:arg name="tilt_center_steps" default="2646"/>
 
-  <xacro:include filename="$(find pt100_description)/urdf/pantilt.common.xacro"/>
-  <xacro:include filename="$(find pt100_description)/urdf/pantilt.control.xacro"/>
-  <xacro:include filename="$(find pt100_description)/urdf/pantilt.module.xacro"/>
+  <xacro:include filename="$(find pt_description)/urdf/pantilt.common.xacro"/>
+  <xacro:include filename="$(find pt_description)/urdf/pantilt.control.xacro"/>
+  <xacro:include filename="$(find pt_description)/urdf/pantilt.module.xacro"/>
 
   <!-- Standalone pantilt module instantiation -->
   <link name="base_footprint"/>

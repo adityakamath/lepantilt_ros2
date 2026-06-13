@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.28)
-project(pt100_bringup)
+project(pt_bringup)
 
 if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   add_compile_options(-Wall -Wextra -Wpedantic)
@@ -31,7 +31,7 @@ ament_target_dependencies(colored_pointcloud_compressor_node
   cloudini_ros
 )
 rclcpp_components_register_node(colored_pointcloud_compressor_node
-  PLUGIN "pt100_bringup::PCLCompressorNode"
+  PLUGIN "pt_bringup::PCLCompressorNode"
   EXECUTABLE pcl_compressor
 )
 

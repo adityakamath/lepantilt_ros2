@@ -40,7 +40,7 @@ def generate_launch_description():
         config_file = "oakd_vio_pcl.yaml" if pointcloud else "oakd_vio.yaml"
         params_file = ParameterFile(
             os.path.join(
-                get_package_share_directory("pt100_bringup"),
+                get_package_share_directory("pt_bringup"),
                 "config",
                 config_file,
             ),
@@ -67,8 +67,8 @@ def generate_launch_description():
         if pointcloud:
             composable_nodes.append(
                 ComposableNode(
-                    package="pt100_bringup",
-                    plugin="pt100_bringup::PCLCompressorNode",
+                    package="pt_bringup",
+                    plugin="pt_bringup::PCLCompressorNode",
                     name="cloudini_compressor",
                     parameters=[params_file],  # Load config from same YAML file
                 )

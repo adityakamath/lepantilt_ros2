@@ -16,10 +16,10 @@
 
 		<!-- File prefix for mesh location -->
 		<xacro:if value="${simulation}">
-			<xacro:property name="mesh_path" value="file://$(find pt100_description)/meshes/oakd_s2.stl" />
+			<xacro:property name="mesh_path" value="file://$(find pt_description)/meshes/oakd_s2.stl" />
 		</xacro:if>
 		<xacro:unless value="${simulation}">
-			<xacro:property name="mesh_path" value="package://pt100_description/meshes/oakd_s2.stl" />
+			<xacro:property name="mesh_path" value="package://pt_description/meshes/oakd_s2.stl" />
 		</xacro:unless>
 
 		<!-- base_link of the sensor-->

@@ -5,7 +5,7 @@
 #include <cloudini_lib/cloudini.hpp>
 #include <cloudini_ros/conversion_utils.hpp>
 
-namespace pt100_bringup {
+namespace pt_bringup {
 
 class PCLCompressorNode : public rclcpp::Node {
 public:
@@ -103,6 +103,6 @@ private:
   double resolution_;
 };
 
-}  // namespace pt100_bringup
+}  // namespace pt_bringup
 
-RCLCPP_COMPONENTS_REGISTER_NODE(pt100_bringup::PCLCompressorNode)
+RCLCPP_COMPONENTS_REGISTER_NODE(pt_bringup::PCLCompressorNode)

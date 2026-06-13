@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.28)
-project(pt100_description)
+project(pt_description)
 
 find_package(ament_cmake REQUIRED)
 

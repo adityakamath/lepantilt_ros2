@@ -30,7 +30,7 @@
   <xacro:property name="tilt_joint_lower" value="$(arg tilt_joint_lower)"/>
   <xacro:property name="tilt_joint_upper" value="$(arg tilt_joint_upper)"/>
 
-  <xacro:include filename="$(find pt100_description)/urdf/pantilt.joints.xacro"/>
+  <xacro:include filename="$(find pt_description)/urdf/pantilt.joints.xacro"/>
 
   <!-- ROS 2 CONTROL -->
   <ros2_control name="pantilt_control" type="system">
