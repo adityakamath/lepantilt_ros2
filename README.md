@@ -148,6 +148,7 @@ ros2 launch pt_control pantilt.launch.py use_mock:=true
 | `sts_serial_port` | `pt_control`, `pt_bringup` | `""`    | Serial port override; empty means use `urdf_config.yaml` value |
 | `use_mock`        | `pt_control`, `pt_bringup` | `""`    | Mock mode override; empty means use `urdf_config.yaml` value   |
 | `diagnostics`     | `pt_control`, `pt_bringup` | `true`  | Launch motor diagnostics node                      |
+| `pantilt_config`  | `pt_control`, `pt_bringup` | `pt101` | Pan-tilt mesh variant: `pt100` or `pt101` (`pt101` is recommended and default, see [Mesh variants](#mesh-variants-pantilt_config)) |
 | `pointcloud`      | `pt_bringup`                  | `false` | Enable RGBD point cloud pipeline on OAK-D S2       |
 | `tf_parent_frame` | `pt_bringup`                  | `tilt_link` | TF frame the OAK-D S2 is mounted to. Override when reusing `oakd.launch.py` to mount the camera elsewhere (e.g. directly on a host robot without the pan-tilt) |
 | `use_sim_time`    | `pt_control`, `pt_bringup` | `false` | Use `/clock` from a simulator instead of system time |
@@ -165,8 +166,8 @@ pantilt100/
 │   │   ├── pantilt.joints.xacro   # Pan/tilt joint declarations as an embeddable macro (shared-bus use)
 │   │   ├── pantilt.module.xacro   # Links and joints as an embeddable xacro macro
 │   │   ├── pantilt.urdf.xacro     # Standalone entry point (includes all above)
-│   │   ├── pt100.urdf             # Pre-generated standalone URDF (pantilt_config=pt100, default)
-│   │   ├── pt101.urdf             # Pre-generated standalone URDF (pantilt_config=pt101)
+│   │   ├── pt100.urdf             # Pre-generated standalone URDF (pantilt_config=pt100)
+│   │   ├── pt101.urdf             # Pre-generated standalone URDF (pantilt_config=pt101, default, recommended)
 │   │   └── oakd_s2.module.xacro   # OAK-D S2 camera and IMU macro
 │   ├── meshes/                    # STL files for pan-tilt body and OAK-D S2
 │   └── launch/
@@ -211,11 +212,15 @@ Both pan and tilt joints use `velocity="1e6"` in their URDF `<limit>` elements. 
 
 #### Mesh variants (`pantilt_config`)
 
-This is the source of the project's naming convention: **PT100** is built with [SO-ARM100](https://github.com/TheRobotStudio/SO-ARM100) base/shoulder parts, and **PT101** is built with the equivalent [SO-ARM101](https://github.com/TheRobotStudio/SO-ARM101) parts. `pantilt.urdf.xacro` (and `pantilt.common.xacro`) accept a `pantilt_config` arg — `pt100` (default) or `pt101` — that selects the matching mesh set for `pantilt_base_link` and `pan_link`. All link/joint origins, axes, and the mount to the host robot are identical between configs — only the body meshes (and their visual-origin corrections) differ. `pt100.urdf` and `pt101.urdf` are pre-generated standalone URDFs for each variant, regenerated with:
+This is the source of the project's naming convention: **PT100** is built with [SO-ARM100](https://github.com/TheRobotStudio/SO-ARM100) base/shoulder parts, and **PT101** is built with the equivalent [SO-ARM101](https://github.com/TheRobotStudio/SO-ARM101) parts. `pantilt.urdf.xacro` (and `pantilt.common.xacro`) accept a `pantilt_config` arg — `pt101` (default) or `pt100` — that selects the matching mesh set for `pantilt_base_link` and `pan_link`.
+
+> **PT101 is the recommended configuration and is set as the default** for `pantilt_config` across this project's launch files.
+
+All link/joint origins, axes, and the mount to the host robot are identical between configs — only the body meshes (and their visual-origin corrections) differ. `pt100.urdf` and `pt101.urdf` are pre-generated standalone URDFs for each variant, regenerated with:
 
 ```bash
-xacro pantilt.urdf.xacro pantilt_config:=pt101 -o pt101.urdf
-sed -i 's#package://pt_description/meshes/#../meshes/#g' pt101.urdf
+xacro pantilt.urdf.xacro pantilt_config:=pt100 -o pt100.urdf
+sed -i 's#package://pt_description/meshes/#../meshes/#g' pt100.urdf
 ```
 
 ### pt_control

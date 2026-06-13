@@ -38,6 +38,11 @@ def generate_launch_description():
             description="Launch motor diagnostics node",
         ),
         DeclareLaunchArgument(
+            "pantilt_config",
+            default_value="pt101",
+            description='Pan-tilt mesh variant: "pt100" or "pt101" (pt101 is recommended and default)',
+        ),
+        DeclareLaunchArgument(
             "pointcloud",
             default_value="false",
             description="Enable RGBD point cloud pipeline.",
@@ -62,6 +67,7 @@ def generate_launch_description():
             "sts_serial_port": LaunchConfiguration("sts_serial_port"),
             "use_mock": LaunchConfiguration("use_mock"),
             "diagnostics": LaunchConfiguration("diagnostics"),
+            "pantilt_config": LaunchConfiguration("pantilt_config"),
             "use_sim_time": LaunchConfiguration("use_sim_time"),
         }.items()
     )

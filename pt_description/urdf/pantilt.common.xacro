@@ -7,11 +7,12 @@
   <xacro:property name="charcoal_rgb" value="0.15"/>
 
   <!-- Pan-tilt mechanical configuration: selects pantilt_base / pan_joint mesh
-       variants. "pt100" (default) uses the original meshes; "pt101" uses the
-       *_pt101 variants. All link/joint origins, axes, and the mount to the
-       host robot are shared and unchanged across configs — pt101 is a
-       drop-in mesh replacement only. -->
-  <xacro:arg name="pantilt_config" default="pt100"/>
+       variants. "pt101" (default, recommended) uses the SO-ARM101-based
+       meshes; "pt100" uses the original SO-ARM100-based meshes. All
+       link/joint origins, axes, and the mount to the host robot are shared
+       and unchanged across configs — pt101 is a drop-in mesh replacement
+       only. -->
+  <xacro:arg name="pantilt_config" default="pt101"/>
   <xacro:property name="pantilt_config" value="$(arg pantilt_config)"/>
 
   <!-- Pantilt base visual compensation / mount rotation (rad) -->
