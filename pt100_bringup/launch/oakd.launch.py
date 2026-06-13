@@ -20,6 +20,13 @@ def generate_launch_description():
             default_value="false",
             description="Use oakd_vio_pcl.yaml (with RGBD point cloud) instead of oakd_vio.yaml.",
         ),
+        DeclareLaunchArgument(
+            "tf_parent_frame",
+            default_value="tilt_link",
+            description="TF frame the OAK-D S2 is mounted to. Default 'tilt_link' is correct "
+                         "for pantilt100; override when mounting the camera elsewhere "
+                         "(e.g. directly on a host robot without the pan-tilt).",
+        ),
     ]
 
     def launch_setup(context, *_args, **_kwargs):
@@ -29,6 +36,7 @@ def generate_launch_description():
             log_level = "debug"
 
         pointcloud = LaunchConfiguration("pointcloud").perform(context) == "true"
+        tf_parent_frame = LaunchConfiguration("tf_parent_frame").perform(context)
         config_file = "oakd_vio_pcl.yaml" if pointcloud else "oakd_vio.yaml"
         params_file = ParameterFile(
             os.path.join(
@@ -47,7 +55,7 @@ def generate_launch_description():
                 name="oak",
                 parameters=[params_file, {
                     "driver": {
-                        "i_tf_parent_frame": "tilt_link",
+                        "i_tf_parent_frame": tf_parent_frame,
                         "i_tf_camera_model": "OAK-D-S2",
                         "i_tf_base_frame": "oak_link",
                     }

@@ -149,6 +149,7 @@ ros2 launch pt100_control pantilt.launch.py use_mock:=true
 | `use_mock`        | `pt100_control`, `pt100_bringup` | `""`    | Mock mode override; empty means use `urdf_config.yaml` value   |
 | `diagnostics`     | `pt100_control`, `pt100_bringup` | `true`  | Launch motor diagnostics node                      |
 | `pointcloud`      | `pt100_bringup`                  | `false` | Enable RGBD point cloud pipeline on OAK-D S2       |
+| `tf_parent_frame` | `pt100_bringup`                  | `tilt_link` | TF frame the OAK-D S2 is mounted to. Override when reusing `oakd.launch.py` to mount the camera elsewhere (e.g. directly on a host robot without the pan-tilt) |
 | `use_sim_time`    | `pt100_control`, `pt100_bringup` | `false` | Use `/clock` from a simulator instead of system time |
 
 > **Note:** All hardware parameters (serial port, baud rate, motor IDs, center steps, joint limits, etc.) are configured in [`pt100_control/config/urdf_config.yaml`](pt100_control/config/urdf_config.yaml). `sts_serial_port` and `use_mock` can be overridden at launch time; all other parameters must be changed in the yaml file directly.
@@ -241,7 +242,7 @@ Joystick axes map directly to **absolute** joint positions, not velocities. The 
 
 `pt100_bringup/pantilt.launch.py` composes `pt100_control/pantilt.launch.py` and `oakd.launch.py` and forwards the relevant arguments to each.
 
-`oakd.launch.py` launches the OAK-D S2 as a composable node container. When `pointcloud:=true`, a `PCLCompressorNode` is also loaded into the same container — it subscribes to `/oak/rgbd/points`, compresses using [cloudini](https://github.com/facontidavide/cloudini) at 1 mm resolution, and publishes to `/oak/rgbd/points/compressed`. Two pipeline configurations are available:
+`oakd.launch.py` launches the OAK-D S2 as a composable node container. When `pointcloud:=true`, a `PCLCompressorNode` is also loaded into the same container — it subscribes to `/oak/rgbd/points`, compresses using [cloudini](https://github.com/facontidavide/cloudini) at 1 mm resolution, and publishes to `/oak/rgbd/points/compressed`. The camera's TF parent is `tf_parent_frame` (default `tilt_link`), so this launch file can be reused as-is to bring up the OAK-D S2 on a host robot that doesn't have the pan-tilt, by overriding `tf_parent_frame` to the host's camera mount link. Two pipeline configurations are available:
 
 | Config file       | Pipeline                                                        | Use case                        |
 |-------------------|-----------------------------------------------------------------|---------------------------------|
