@@ -38,24 +38,10 @@
   <xacro:if value="${pantilt_config == 'pt101'}">
     <xacro:property name="pantilt_base_mesh" value="pantilt_base_101.stl"/>
     <xacro:property name="pan_joint_mesh" value="pan_joint_101.stl"/>
-    <!-- pt101 meshes are pre-merged single-piece exports in their own native
-         frames (not aligned with pt100's). The rotation+translation below
-         was derived by matching each pt101 mesh's native bounding-box
-         extents/asymmetry against pt100's corresponding mesh's bounding box
-         after pt100's existing visual-compensation rotation
-         (pantilt_offset_rz for the base, pan_offset_rx+pan_offset_rz for the
-         pan body): pantilt_base_101.stl's bbox matches pantilt_base_100.stl's
-         (post-Rz(pi/2)) bbox after rotating by R(pi/2,0,pi/2); pan_joint_101.stl's
-         bbox matches pan_joint_100.stl's (post-R(pi/2,0,pi/2)) bbox after rotating
-         by R(pi/2,0,pi). The small translations align the base plate's
-         underside to Z=0 and the pan body's bbox to pt100's pan body bbox in
-         pan_link frame. Verified by rendering the full assembled chain
-         (base + pan_motor + pan body + tilt_motor + tilt body) for pt100 and
-         pt101 side by side from multiple angles. -->
     <xacro:property name="pantilt_base_mesh_rpy" value="${pi/2} 0 ${pi/2}"/>
     <xacro:property name="pan_joint_mesh_rpy" value="${pi/2} 0 ${pi}"/>
     <xacro:property name="pantilt_base_mesh_xyz" value="0 0 0.0002"/>
-    <xacro:property name="pan_joint_mesh_xyz" value="-0.0120 0 -0.0002"/>
+    <xacro:property name="pan_joint_mesh_xyz" value="-0.0120 0 0.00205"/>
   </xacro:if>
 
   <!-- Pan joint origin (in reoriented base_link frame) -->
