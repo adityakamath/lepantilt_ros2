@@ -149,7 +149,7 @@ ros2 launch pt_control pantilt.launch.py use_mock:=true
 | `use_mock`        | `pt_control`, `pt_bringup` | `""`    | Mock mode override; empty means use `urdf_config.yaml` value   |
 | `diagnostics`     | `pt_control`, `pt_bringup` | `true`  | Launch motor diagnostics node                      |
 | `pantilt_config`  | `pt_control`, `pt_bringup` | `pt101` | Pan-tilt mesh variant: `pt100` or `pt101` (`pt101` is recommended and default, see [Mesh variants](#mesh-variants-pantilt_config)) |
-| `pointcloud`      | `pt_bringup`                  | `false` | Enable RGBD point cloud pipeline on OAK-D S2       |
+| `pointcloud`      | `pt_bringup`                  | `false` | Use `oakd_vio_pcl.yaml` (depth aligned to RGB + point cloud) instead of `oakd_vio.yaml` (depth unaligned, no point cloud). Also gates point cloud compression. |
 | `tf_parent_frame` | `pt_bringup`                  | `tilt_link` | TF frame the OAK-D S2 is mounted to. Override when reusing `oakd.launch.py` to mount the camera elsewhere (e.g. directly on a host robot without the pan-tilt) |
 | `use_sim_time`    | `pt_control`, `pt_bringup` | `false` | Use `/clock` from a simulator instead of system time |
 
@@ -184,8 +184,8 @@ pantilt100/
 │
 └── pt_bringup/                 # System-level launch files and camera config
   ├── config/
-  │   ├── oakd_vio.yaml            # OAK-D S2: RGBD pipeline + VIO at 60 Hz, no point cloud
-  │   └── oakd_vio_pcl.yaml        # OAK-D S2: same as above with RGBD point cloud enabled
+  │   ├── oakd_vio.yaml            # OAK-D S2: shared base - RGB + IMU + VIO + depth, no point cloud
+  │   └── oakd_vio_pcl.yaml        # OAK-D S2: overlay on the base - RGBD point cloud + RGB-aligned depth
   ├── src/
   │   └── pcl_compressor_node.cpp  # Cloudini PCL compression composable node (point cloud mode)
   └── launch/
@@ -247,12 +247,16 @@ Joystick axes map directly to **absolute** joint positions, not velocities. The 
 
 `pt_bringup/pantilt.launch.py` composes `pt_control/pantilt.launch.py` and `oakd.launch.py` and forwards the relevant arguments to each.
 
-`oakd.launch.py` launches the OAK-D S2 as a composable node container. When `pointcloud:=true`, a `PCLCompressorNode` is also loaded into the same container — it subscribes to `/oak/rgbd/points`, compresses using [cloudini](https://github.com/facontidavide/cloudini) at 1 mm resolution, and publishes to `/oak/rgbd/points/compressed`. The camera's TF parent is `tf_parent_frame` (default `tilt_link`), so this launch file can be reused as-is to bring up the OAK-D S2 on a host robot that doesn't have the pan-tilt, by overriding `tf_parent_frame` to the host's camera mount link. Two pipeline configurations are available:
+`oakd.launch.py` launches the OAK-D S2 as a composable node container. `depth_to_scan` (`/oak/scan`) runs in both modes. A `PCLCompressorNode` (subscribes to `/oak/rgbd/points`, compresses using [cloudini](https://github.com/facontidavide/cloudini) at 1 mm resolution, publishes to `/oak/rgbd/points/compressed`) is only loaded when `pointcloud:=true` — the point cloud topic it depends on doesn't exist otherwise. The camera's TF parent is `tf_parent_frame` (default `tilt_link`), so this launch file can be reused as-is to bring up the OAK-D S2 on a host robot that doesn't have the pan-tilt, by overriding `tf_parent_frame` to the host's camera mount link.
 
-| Config file       | Pipeline                                                        | Use case                        |
-|-------------------|-----------------------------------------------------------------|---------------------------------|
-| `oakd_vio.yaml`   | RGB 30 Hz, depth 15 Hz (decimated), VIO 60 Hz                   | Default — odometry and tracking |
-| `oakd_vio_pcl.yaml`| RGB 30 Hz, depth 30 Hz (no decimation), VIO 60 Hz + point cloud | 3D mapping (higher CPU load)    |
+`oakd_vio.yaml` is the shared base config (RGB, IMU, VIO, stereo depth settings) - always loaded. `oakd_vio_pcl.yaml` is a small overlay containing only the keys that actually differ when `pointcloud:=true` (`i_enable_rgbd`, `i_aligned`, plus its own `cloudini_compressor` block), layered on top of the base in `oak`'s composable node parameters list rather than duplicated into a second full config file.
+
+| Config file       | Pipeline                                                | Use case                        |
+|-------------------|----------------------------------------------------------|---------------------------------|
+| `oakd_vio.yaml`   | RGB 30 Hz, IMU, depth 30 Hz full resolution (not aligned to RGB), VIO 60 Hz - no point cloud | Default — odometry and tracking |
+| `oakd_vio_pcl.yaml`| RGB 30 Hz, depth 30 Hz full resolution (aligned to RGB), VIO 60 Hz, point cloud | 3D mapping (higher CPU load)    |
+
+`oakd_vio.yaml` publishes depth with `stereo.i_aligned: false` rather than the more common RGB-aligned depth — a real bug in `depthai_ros_driver` 3.1.0 causes `oak_container` to crash after running depth through the RGB-alignment code path (`i_aligned: true`) without also enabling the point cloud (the "lone consumer" RVC4 `ImageAlign` path). Unaligned depth bypasses that code path entirely (the `ImageAlign` node never gets constructed), and is sufficient for `depth_to_scan` either way since it only needs a depth image + matching `camera_info`, not RGB alignment. A decimation filter was tried for lower bandwidth but visibly hurt depth quality (4x fewer pixels plus median-filter blockiness), so depth runs at full resolution with a threshold filter instead (450-4000mm, same as `oakd_vio_pcl.yaml`) to clamp noisy readings without losing resolution. Lowering stereo's frame rate below RGB's 30 Hz also broke publishing, so it stays matched to RGB. See `nav2_part2_plan.md` in the parent `lekiwi_ros2` repo for the full investigation.
 
 Set `DEPTHAI_DEBUG=1` in the environment before launching to enable debug-level logging from the camera driver.
 
@@ -267,7 +271,8 @@ Set `DEPTHAI_DEBUG=1` in the environment before launching to enable debug-level 
 | `/pantilt_controller/commands`   | `std_msgs/Float64MultiArray`            | Subscribed | Position commands `[pan_rad, tilt_rad]`                                          |
 | `/joy`                           | `sensor_msgs/Joy`                       | Subscribed | Joystick input (published by external `joy` node)                                |
 | `/oak/rgb/image_raw`             | `sensor_msgs/Image`                     | Published  | OAK-D S2 RGB stream                                                              |
-| `/oak/stereo/image_raw`          | `sensor_msgs/Image`                     | Published  | OAK-D S2 depth stream                                                            |
+| `/oak/stereo/image_raw`          | `sensor_msgs/Image`                     | Published  | OAK-D S2 depth stream (aligned to RGB when `pointcloud:=true`, unaligned otherwise - see Package Details) |
+| `/oak/scan`                      | `sensor_msgs/LaserScan`                 | Published  | Laser scan sliced from the depth image                                          |
 | `/oak/imu/data`                  | `sensor_msgs/Imu`                       | Published  | OAK-D S2 IMU data                                                                |
 | `/oak/vio/transform`             | `geometry_msgs/TransformStamped`        | Published  | Visual-inertial odometry output                                                  |
 | `/oak/rgbd/points`               | `sensor_msgs/PointCloud2`               | Published  | Raw RGBD point cloud (only when `pointcloud:=true`)                              |

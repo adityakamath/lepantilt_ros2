@@ -1,5 +1,29 @@
-# OAK-D S2 pipeline: RGBD + VIO, no point cloud.
-# RGB at 30 Hz (quarter ISP resolution, low-bandwidth JPEG), depth at 15 Hz (2x decimation), VIO at 60 Hz.
+# OAK-D S2 pipeline: RGB + IMU + VIO + depth (NOT aligned to RGB), no point cloud.
+# RGB at 30 Hz (quarter ISP resolution, low-bandwidth JPEG), depth at 30 Hz full resolution
+# (640x400), VIO at 60 Hz.
+#
+# stereo.i_aligned: false is the key setting here. Depth WITH i_aligned: true previously hit a
+# real depthai_ros_driver 3.1.0 bug (a "double free or corruption" glibc abort after ~150s of
+# runtime, in the RVC4 ImageAlign code path that i_aligned:true + i_enable_rgbd:false takes -
+# see nav2_part2_plan.md "Bug:" section for the full investigation). With i_aligned: false, the
+# ImageAlign node never gets constructed at all - setInOut() publishes directly from
+# stereoCamNode->depth instead, bypassing that code path entirely. Confirmed stable (no crash)
+# with real depth data flowing. Depth comes out in the stereo camera's own native frame (not
+# aligned to RGB) - irrelevant for depth_to_scan, which just needs a depth image + matching
+# camera_info, not RGB alignment.
+#
+# No decimation: it was tried for bandwidth (320x200, NON_ZERO_MEDIAN) but visibly hurt depth
+# quality - both the resolution cut itself and the median filter's blockiness. Full resolution
+# instead, same as oakd_vio_pcl.yaml.
+#
+# stereo.i_fps was tried at 15.0 (half of rgb's 30) for bandwidth, on the theory that
+# ImageAlign's rate-matching no longer applies with i_aligned: false - but that broke
+# publishing again, so stereo stays at its 30 Hz default (matching rgb).
+#
+# stereo.i_low_bandwidth is NOT a viable further optimization here, despite the name: setting it
+# true switches setInOut() to publish disparity instead of depth (see stereo.cpp's
+# `if(outputDisparity || lowBandwidth)` branch) - disparity isn't metric depth, and
+# depth_to_scan needs actual depth values, not disparity. Left unset (false).
 /oak:
   ros__parameters:
     driver:
@@ -32,15 +56,17 @@
       i_publish_topic: false
     stereo:
       i_depth_preset: FAST_ACCURACY
-      i_fps: 15.0
-      i_enable_decimation_filter: true
-      i_decimation_filter_decimation_factor: 2
-      i_decimation_filter_decimation_mode: NON_ZERO_MEDIAN
       i_publish_topic: true
       i_publish_left_rect: false
       i_publish_right_rect: false
       i_publish_synced_rect_pair: false
-      i_aligned: true
+      i_aligned: false
+      # Matches depth_to_scan's range_min/range_max (depthimage_to_laserscan.yaml) - clamps
+      # noisy near/far-range stereo readings at the source instead of leaving them as visual
+      # noise in the depth image. Same as oakd_vio_pcl.yaml.
+      i_enable_threshold_filter: true
+      i_threshold_filter_min_range: 450    # mm, matches range_min: 0.45
+      i_threshold_filter_max_range: 4000   # mm, matches range_max: 4.0
     oak.rgb.image_raw.enable_pub_plugins:
       - image_transport/raw
       - image_transport/compressed

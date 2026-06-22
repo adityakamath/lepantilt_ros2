@@ -4,6 +4,7 @@ Launch file to start the OAK-D S2 camera using depthai_ros_driver.
 """
 
 import os
+
 from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument, OpaqueFunction
@@ -18,7 +19,18 @@ def generate_launch_description():
         DeclareLaunchArgument(
             "pointcloud",
             default_value="false",
-            description="Use oakd_vio_pcl.yaml (with RGBD point cloud) instead of oakd_vio.yaml.",
+            description="Layer oakd_vio_pcl.yaml on top of oakd_vio.yaml (depth aligned to "
+                         "RGB + point cloud) instead of oakd_vio.yaml alone (depth unaligned, "
+                         "no point cloud). Both publish /oak/scan via depth_to_scan. Also "
+                         "gates cloudini compression, which needs the point cloud that only "
+                         "exists in this mode. Required for octomap:=true.",
+        ),
+        DeclareLaunchArgument(
+            "octomap",
+            default_value="false",
+            description="Run octomap_server on /oak/rgbd/points to build a persistent 3D "
+                         "octree. Only takes effect when pointcloud:=true (no point cloud to "
+                         "consume otherwise).",
         ),
         DeclareLaunchArgument(
             "tf_parent_frame",
@@ -30,22 +42,33 @@ def generate_launch_description():
     ]
 
     def launch_setup(context, *_args, **_kwargs):
-        """Select oakd_vio.yaml or oakd_vio_pcl.yaml based on the pointcloud arg and start the OAK-D composable node container."""
+        """Start the OAK-D composable node container. oakd_vio.yaml is the shared base config
+        (RGB, IMU, VIO, stereo depth settings); oakd_vio_pcl.yaml is a small overlay (just the
+        keys that actually differ - i_enable_rgbd, i_aligned, plus its own cloudini_compressor
+        block) layered on top of it when pointcloud:=true. Composable node parameters are a
+        list, with later entries overriding earlier ones key-by-key (not whole-block
+        replacement) - same mechanism already used below for the tf_parent_frame override."""
         log_level = "info"
         if context.environment.get("DEPTHAI_DEBUG") == "1":
             log_level = "debug"
 
         pointcloud = LaunchConfiguration("pointcloud").perform(context) == "true"
+        octomap = LaunchConfiguration("octomap").perform(context) == "true"
         tf_parent_frame = LaunchConfiguration("tf_parent_frame").perform(context)
-        config_file = "oakd_vio_pcl.yaml" if pointcloud else "oakd_vio.yaml"
-        params_file = ParameterFile(
-            os.path.join(
-                get_package_share_directory("pt_bringup"),
-                "config",
-                config_file,
-            ),
-            allow_substs=True,
-        )
+
+        config_dir = os.path.join(get_package_share_directory("pt_bringup"), "config")
+        base_params_file = ParameterFile(os.path.join(config_dir, "oakd_vio.yaml"), allow_substs=True)
+        oak_parameters = [base_params_file]
+        if pointcloud:
+            pcl_overlay_file = ParameterFile(os.path.join(config_dir, "oakd_vio_pcl.yaml"), allow_substs=True)
+            oak_parameters.append(pcl_overlay_file)
+        oak_parameters.append({
+            "driver": {
+                "i_tf_parent_frame": tf_parent_frame,
+                "i_tf_camera_model": "OAK-D-S2",
+                "i_tf_base_frame": "oak_link",
+            }
+        })
 
         # Build composable node list - always include OAK-D driver
         composable_nodes = [
@@ -53,26 +76,62 @@ def generate_launch_description():
                 package="depthai_ros_driver",
                 plugin="depthai_ros_driver::Driver",
                 name="oak",
-                parameters=[params_file, {
-                    "driver": {
-                        "i_tf_parent_frame": tf_parent_frame,
-                        "i_tf_camera_model": "OAK-D-S2",
-                        "i_tf_base_frame": "oak_link",
-                    }
-                }],
-            )
+                parameters=oak_parameters,
+            ),
+            # Slices /oak/stereo/image_raw into /oak/scan. /oak/stereo/image_raw is published in
+            # both pointcloud:=true and pointcloud:=false modes (oakd_vio.yaml publishes depth
+            # unaligned to RGB - see its file header - oakd_vio_pcl.yaml publishes it aligned),
+            # so this runs regardless of the pointcloud arg.
+            ComposableNode(
+                package="depthimage_to_laserscan",
+                plugin="depthimage_to_laserscan::DepthImageToLaserScanROS",
+                name="depth_to_scan",
+                parameters=[
+                    os.path.join(
+                        get_package_share_directory("pt_bringup"),
+                        "config",
+                        "depthimage_to_laserscan.yaml",
+                    )
+                ],
+                remappings=[
+                    ("depth", "/oak/stereo/image_raw"),
+                    ("depth_camera_info", "/oak/stereo/camera_info"),
+                    ("scan", "/oak/scan"),
+                ],
+            ),
         ]
 
-        # Add cloudini compression when pointcloud mode is enabled
+        # cloudini compression and octomap need /oak/rgbd/points, which only exists when
+        # pointcloud:=true.
         if pointcloud:
+            # For remote/network consumers (e.g. Foxglove over WiFi). Its own params live in
+            # the /cloudini_compressor block of the same pcl_overlay_file used above.
             composable_nodes.append(
                 ComposableNode(
                     package="pt_bringup",
                     plugin="pt_bringup::PCLCompressorNode",
                     name="cloudini_compressor",
-                    parameters=[params_file],  # Load config from same YAML file
+                    parameters=[pcl_overlay_file],
                 )
             )
+            if octomap:
+                composable_nodes.append(
+                    ComposableNode(
+                        package="octomap_server",
+                        plugin="octomap_server::OctomapServer",
+                        name="octomap_server",
+                        parameters=[
+                            os.path.join(
+                                get_package_share_directory("pt_bringup"),
+                                "config",
+                                "octomap.yaml",
+                            )
+                        ],
+                        remappings=[
+                            ("cloud_in", "/oak/rgbd/points"),
+                        ],
+                    )
+                )
 
         return [
             ComposableNodeContainer(

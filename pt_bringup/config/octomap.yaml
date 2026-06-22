@@ -1,0 +1,22 @@
+# OctoMap pipeline: /oak/rgbd/points (raw, uncompressed - same machine, no reason to take the
+# compress/decompress round trip) -> persistent 3D octree. Only in pointcloud:=true (the cloud
+# doesn't exist otherwise). octomap_server looks up the camera's actual TF pose at each cloud's
+# timestamp (driven by the pan-tilt's live joint states) and integrates points at their correct
+# 3D position - so as the pan-tilt sweeps through different tilt angles over time, successive
+# clouds accumulate into real 3D structure.
+/octomap_server:
+  ros__parameters:
+    frame_id: odom              # world frame the octree is built in
+    base_frame_id: base_footprint
+    resolution: 0.05            # octree leaf size, meters
+    filter_ground_plane: false  # keep simple - no height filtering needed below
+    # No point_cloud_min_z/max_z override: this is a real 3D map, not a nav2 obstacle layer -
+    # the floor, and anything below the base_footprint ground plane (holes, drop-offs,
+    # descending stairs), are legitimate structure we want represented, not noise to exclude.
+    sensor_model:
+      max_range: 4.0           # matches depth_to_scan's range_max - ignore anything farther
+    # Default true means every output gets built and published on EVERY update regardless of
+    # subscribers. false makes all of them subscriber-gated instead - we didn't want
+    # occupied_cells_vis_array/projected_map generated at all, and there's no per-topic
+    # toggle in this package, so this has to be a global false.
+    latch: false
