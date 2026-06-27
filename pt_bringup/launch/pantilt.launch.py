@@ -15,12 +15,7 @@ from launch.substitutions import LaunchConfiguration, PathJoinSubstitution
 from launch_ros.substitutions import FindPackageShare
 
 def generate_launch_description():
-    """
-    Generate a launch description that brings up the Pan Tilt 100 mechanism control and camera nodes.
-    Declares and forwards arguments to included launch files.
-    """
-
-    # Declare launch arguments for bringup
+    """Declare launch arguments and include pt_control's and pt_bringup's own launch files."""
     declared_arguments = [
         DeclareLaunchArgument(
             "sts_serial_port",
@@ -54,7 +49,6 @@ def generate_launch_description():
         ),
     ]
 
-    # Include the PanTilt control stack launch file, forwarding use_mock and diagnostics
     pantilt_control_launch = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
             PathJoinSubstitution([
@@ -72,7 +66,6 @@ def generate_launch_description():
         }.items()
     )
 
-    # Include the OAK-D camera launch file, forwarding params_file
     oakd_launch = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
             PathJoinSubstitution([
@@ -86,7 +79,6 @@ def generate_launch_description():
         }.items()
     )
 
-    # Return the composed launch description
     return LaunchDescription(declared_arguments + [
         pantilt_control_launch,
         oakd_launch

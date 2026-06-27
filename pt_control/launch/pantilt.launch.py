@@ -25,6 +25,7 @@ from launch_ros.substitutions import FindPackageShare
 
 
 def launch_setup(context):
+    """Build the PT100 control-stack nodes, reading urdf_config.yaml for xacro args."""
     serial_port    = LaunchConfiguration('sts_serial_port').perform(context)
     use_mock       = LaunchConfiguration('use_mock').perform(context)
     diagnostics    = LaunchConfiguration('diagnostics').perform(context)
@@ -119,6 +120,7 @@ def launch_setup(context):
 
 
 def generate_launch_description():
+    """Declare control-stack launch arguments and launch via launch_setup."""
     declared_arguments = [
         DeclareLaunchArgument(
             'sts_serial_port',

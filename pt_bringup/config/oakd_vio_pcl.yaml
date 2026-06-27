@@ -1,39 +1,24 @@
-# Overlay for oakd_vio.yaml - loaded ON TOP of it by oakd.launch.py when pointcloud:=true
-# (see ComposableNode parameters list there). Only contains the keys that actually differ from
-# the base profile - everything else (RGB, IMU, VIO, stereo depth_preset/threshold filter,
-# image_transport plugins) is shared and lives in oakd_vio.yaml only, to avoid duplicating it
-# across both files.
-#
-# i_enable_rgbd: generates the /oak/rgbd/points point cloud this profile exists for.
-# i_aligned: true: aligns depth to RGB so the point cloud's colors line up with its geometry -
-# also takes a different (proven-stable, see nav2_part2_plan.md "Bug:" section) code path than
-# oakd_vio.yaml's i_aligned: false.
+# Overlay for oakd_vio.yaml - loaded ON TOP of it by oakd.launch.py when pointcloud:=true.
+# Only contains the keys that differ from the base profile; everything else (RGB defaults, IMU,
+# VIO, stereo depth_preset/threshold filter, image_transport plugins) is shared and stays in
+# oakd_vio.yaml only.
 /oak:
   ros__parameters:
     pipeline_gen:
-      i_enable_rgbd: true
+      i_enable_rgbd: true  # generates /oak/rgbd/points
     rgb:
-      # Override: oakd_vio.yaml's rgb.i_width/i_height: 320x200 (a real requestOutput() resize)
-      # crashes this profile (SIPP E_OUT_OF_MEM -> X_LINK_ERROR on every stream, confirmed live)
-      # when combined with i_aligned: true + i_enable_rgbd: true below. Reverting RGB to the
-      # driver's own 640x400 default avoids it.
+      # Explicit guard, not currently a real override (oakd_vio.yaml's rgb is already 640x400) -
+      # a smaller RGB size is known to crash this profile in combination with i_aligned/
+      # i_enable_rgbd below, so this stays pinned regardless of what the base file does.
       i_width: 640
       i_height: 400
     stereo:
-      i_aligned: true
-      # Override: oakd_vio.yaml's stereo.i_enable_decimation_filter: true also crashes this
-      # profile - a reproducible segfault (exit code -11) a few seconds after startup, confirmed
-      # live twice. Disabling it here (full 640x400 depth) avoids it. Decimation and the RGB
-      # resize above are both fine on their own in oakd_vio.yaml (no alignment, no RGBD) - it's
-      # specifically the combination with i_aligned: true + i_enable_rgbd: true that's unstable.
+      i_aligned: true  # depth aligned to RGB, so point cloud colors line up with geometry
+      # Explicit guard, not currently a real override (oakd_vio.yaml's decimation is already
+      # off) - decimation is known to crash this profile in combination with i_aligned/
+      # i_enable_rgbd, so this stays pinned regardless of what the base file does.
       i_enable_decimation_filter: false
-      # Override: neither oakd_vio.yaml nor this file set stereo.i_fps explicitly, so it doesn't
-      # match rgb's 30 Hz. This is the documented "FPS mismatch into the alignment node" bug
-      # (see nav2_part1_5_plan.md "Bug:" section) - ImageAlign's inputAlignTo stalls when depth's
-      # rate doesn't match the RGB it's aligning to, silently breaking /oak/scan and
-      # /oak/rgbd/points (no errors, just no data). Was present and explicitly set to 30.0 in
-      # this file before the base-config de-duplication refactor; restoring it here.
-      i_fps: 30.0
+      i_fps: 30.0  # must match rgb's rate or depth/scan/rgbd silently stop publishing
 
 # Cloudini point cloud compression configuration
 # Compresses /oak/rgbd/points → /oak/rgbd/points/compressed

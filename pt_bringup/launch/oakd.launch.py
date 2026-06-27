@@ -42,12 +42,8 @@ def generate_launch_description():
     ]
 
     def launch_setup(context, *_args, **_kwargs):
-        """Start the OAK-D composable node container. oakd_vio.yaml is the shared base config
-        (RGB, IMU, VIO, stereo depth settings); oakd_vio_pcl.yaml is a small overlay (just the
-        keys that actually differ - i_enable_rgbd, i_aligned, plus its own cloudini_compressor
-        block) layered on top of it when pointcloud:=true. Composable node parameters are a
-        list, with later entries overriding earlier ones key-by-key (not whole-block
-        replacement) - same mechanism already used below for the tf_parent_frame override."""
+        """Start the OAK-D composable node container, layering oakd_vio_pcl.yaml on top of
+        oakd_vio.yaml when pointcloud:=true."""
         log_level = "info"
         if context.environment.get("DEPTHAI_DEBUG") == "1":
             log_level = "debug"
@@ -78,10 +74,7 @@ def generate_launch_description():
                 name="oak",
                 parameters=oak_parameters,
             ),
-            # Slices /oak/stereo/image_raw into /oak/scan. /oak/stereo/image_raw is published in
-            # both pointcloud:=true and pointcloud:=false modes (oakd_vio.yaml publishes depth
-            # unaligned to RGB - see its file header - oakd_vio_pcl.yaml publishes it aligned),
-            # so this runs regardless of the pointcloud arg.
+            # Slices /oak/stereo/image_raw into /oak/scan - runs regardless of pointcloud.
             ComposableNode(
                 package="depthimage_to_laserscan",
                 plugin="depthimage_to_laserscan::DepthImageToLaserScanROS",
@@ -104,8 +97,6 @@ def generate_launch_description():
         # cloudini compression and octomap need /oak/rgbd/points, which only exists when
         # pointcloud:=true.
         if pointcloud:
-            # For remote/network consumers (e.g. Foxglove over WiFi). Its own params live in
-            # the /cloudini_compressor block of the same pcl_overlay_file used above.
             composable_nodes.append(
                 ComposableNode(
                     package="pt_bringup",
