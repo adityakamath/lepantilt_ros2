@@ -7,10 +7,11 @@ controllers.
 """
 
 from launch import LaunchDescription
-from launch_ros.actions import Node
 from launch.substitutions import Command, FindExecutable, PathJoinSubstitution
+from launch_ros.actions import Node
 from launch_ros.parameter_descriptions import ParameterValue
 from launch_ros.substitutions import FindPackageShare
+
 
 def generate_launch_description():
     """Launch robot_state_publisher with the URDF expanded from xacro."""
