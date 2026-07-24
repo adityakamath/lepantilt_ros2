@@ -26,7 +26,8 @@
       pan_joint_lower:=-1.5708
       pan_joint_upper:=1.5708
       tilt_joint_lower:=-1.5708
-      tilt_joint_upper:=1.5708">
+      tilt_joint_upper:=1.5708
+      ros2_control_hardware_type:=real">
 
     <!-- 85% of hardware max — 15% safety margin; motor firmware handles profiling -->
     <xacro:property name="pantilt_max_velocity_steps" value="${int(sts_max_velocity_steps * 0.85)}"/>
@@ -44,10 +45,14 @@
       <state_interface name="position"/>
       <state_interface name="velocity"/>
       <state_interface name="effort"/>
-      <state_interface name="voltage"/>
-      <state_interface name="temperature"/>
-      <state_interface name="current"/>
-      <state_interface name="is_moving"/>
+      <!-- Real-hardware-only telemetry: gz_ros2_control/GazeboSimSystem only knows
+           position/velocity/effort, and simulated joints have no real telemetry for these. -->
+      <xacro:unless value="${ros2_control_hardware_type == 'gazebo'}">
+        <state_interface name="voltage"/>
+        <state_interface name="temperature"/>
+        <state_interface name="current"/>
+        <state_interface name="is_moving"/>
+      </xacro:unless>
     </joint>
 
     <!-- Tilt axis: rotates the payload around Y -->
@@ -62,10 +67,14 @@
       <state_interface name="position"/>
       <state_interface name="velocity"/>
       <state_interface name="effort"/>
-      <state_interface name="voltage"/>
-      <state_interface name="temperature"/>
-      <state_interface name="current"/>
-      <state_interface name="is_moving"/>
+      <!-- Real-hardware-only telemetry: gz_ros2_control/GazeboSimSystem only knows
+           position/velocity/effort, and simulated joints have no real telemetry for these. -->
+      <xacro:unless value="${ros2_control_hardware_type == 'gazebo'}">
+        <state_interface name="voltage"/>
+        <state_interface name="temperature"/>
+        <state_interface name="current"/>
+        <state_interface name="is_moving"/>
+      </xacro:unless>
     </joint>
 
   </xacro:macro>

@@ -17,14 +17,29 @@
   <xacro:arg name="tilt_joint_lower"       default="-1.5708"/>  <!-- rad, default -π/2 -->
   <xacro:arg name="tilt_joint_upper"       default="1.5708"/>   <!-- rad, default +π/2 -->
 
+  <!-- Gazebo simulation -->
+  <!-- "real" (default) keeps the STS3215 serial hardware plugin below unchanged.
+       "gazebo" swaps the <hardware> plugin for gz_ros2_control/GazeboSimSystem, which
+       implements the same SystemInterface contract - the joints and controllers stay
+       identical either way. -->
+  <xacro:arg name="ros2_control_hardware_type" default="real"/>
+  <!-- Path to the controllers YAML the embedded controller_manager should load; only
+       used when the <gazebo> plugin below is actually instantiated (i.e. in sim). -->
+  <xacro:arg name="simulation_controllers" default=""/>
+
   <!-- Hardware velocity ceiling — defined before <ros2_control> because the hardware
        plugin param references it directly. pantilt_joints receives the same value so
        joint velocity limits stay consistent with what the interface is configured to enforce. -->
   <xacro:property name="sts_max_velocity_steps" value="$(arg sts_max_velocity_steps)"/>
 
-  <!-- Torque limit and joint limits as top-level properties — required by pantilt.module.xacro
-       for the URDF <limit> elements on the revolute joints. -->
+  <!-- Torque/velocity limits and joint limits as top-level properties — required by
+       pantilt.module.xacro for the URDF <limit> elements on the revolute joints.
+       pantilt_max_velocity_rads duplicates pantilt_joints' own local computation
+       (pantilt.joints.xacro) - only used by module.xacro's gazebo-mode <limit velocity>,
+       real mode keeps velocity="1e6" (see module.xacro's comment on why) regardless. -->
   <xacro:property name="max_torque_nm"    value="2.942"/>  <!-- N⋅m (30 kgf⋅cm for STS3215) -->
+  <xacro:property name="pantilt_max_velocity_steps" value="${int(sts_max_velocity_steps * 0.85)}"/>
+  <xacro:property name="pantilt_max_velocity_rads"  value="${pantilt_max_velocity_steps * 2 * pi / 4096}"/>
   <xacro:property name="pan_joint_lower"  value="$(arg pan_joint_lower)"/>
   <xacro:property name="pan_joint_upper"  value="$(arg pan_joint_upper)"/>
   <xacro:property name="tilt_joint_lower" value="$(arg tilt_joint_lower)"/>
@@ -35,15 +50,20 @@
   <!-- ROS 2 CONTROL -->
   <ros2_control name="pantilt_control" type="system">
     <hardware>
-      <plugin>sts_hardware_interface/STSHardwareInterface</plugin>
-      <param name="serial_port">$(arg serial_port)</param>
-      <param name="baud_rate">$(arg baud_rate)</param>
-      <param name="communication_timeout_ms">100</param>
-      <param name="use_sync_write">$(arg use_sync_write)</param>
-      <param name="enable_mock_mode">$(arg use_mock)</param>
-      <param name="max_velocity_steps">${sts_max_velocity_steps}</param>
-      <param name="proportional_vel_max">$(arg proportional_vel_max)</param>
-      <param name="reset_states_on_activate">true</param>
+      <xacro:if value="${'$(arg ros2_control_hardware_type)' == 'gazebo'}">
+        <plugin>gz_ros2_control/GazeboSimSystem</plugin>
+      </xacro:if>
+      <xacro:unless value="${'$(arg ros2_control_hardware_type)' == 'gazebo'}">
+        <plugin>sts_hardware_interface/STSHardwareInterface</plugin>
+        <param name="serial_port">$(arg serial_port)</param>
+        <param name="baud_rate">$(arg baud_rate)</param>
+        <param name="communication_timeout_ms">100</param>
+        <param name="use_sync_write">$(arg use_sync_write)</param>
+        <param name="enable_mock_mode">$(arg use_mock)</param>
+        <param name="max_velocity_steps">${sts_max_velocity_steps}</param>
+        <param name="proportional_vel_max">$(arg proportional_vel_max)</param>
+        <param name="reset_states_on_activate">true</param>
+      </xacro:unless>
     </hardware>
 
     <xacro:pantilt_joints
@@ -55,7 +75,8 @@
         pan_joint_lower="${pan_joint_lower}"
         pan_joint_upper="${pan_joint_upper}"
         tilt_joint_lower="${tilt_joint_lower}"
-        tilt_joint_upper="${tilt_joint_upper}"/>
+        tilt_joint_upper="${tilt_joint_upper}"
+        ros2_control_hardware_type="$(arg ros2_control_hardware_type)"/>
   </ros2_control>
 
 </robot>

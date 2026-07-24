@@ -4,7 +4,8 @@ Pan Tilt 100 ROS 2 control stack launch file.
 
 This launch file starts:
     - robot_state_publisher
-    - controller_manager (ros2_control)
+    - controller_manager (ros2_control) - real mode only; in gazebo mode,
+      pantilt.urdf.xacro's <gazebo> plugin spawns it embedded inside gz_sim instead
     - joint_state_broadcaster
     - pantilt_controller
     - (optionally) motor diagnostics
@@ -31,10 +32,14 @@ def launch_setup(context):
     diagnostics    = LaunchConfiguration('diagnostics').perform(context)
     pantilt_config = LaunchConfiguration('pantilt_config').perform(context)
     use_sim_time   = LaunchConfiguration('use_sim_time').perform(context).lower() in ('true', '1')
+    hw_type = LaunchConfiguration('ros2_control_hardware_type').perform(context)
+    simulation_controllers = LaunchConfiguration('simulation_controllers').perform(context)
 
     pkg_ctrl = FindPackageShare('pt_control').perform(context)
     pkg_desc = FindPackageShare('pt_description').perform(context)
     xacro    = FindExecutable(name='xacro').perform(context)
+
+    final_simulation_controllers = simulation_controllers if simulation_controllers else f'{pkg_ctrl}/config/pantilt_config.yaml'
 
     _cfg = yaml.safe_load(open(f'{pkg_ctrl}/config/urdf_config.yaml'))
     final_serial_port = serial_port if serial_port else _cfg['serial_port']
@@ -58,6 +63,11 @@ def launch_setup(context):
         f' tilt_joint_lower:={_cfg["tilt_joint_lower"]}'
         f' tilt_joint_upper:={_cfg["tilt_joint_upper"]}'
     )
+    if hw_type != 'real':
+        xacro_cmd += (
+            f' ros2_control_hardware_type:={hw_type}'
+            f' simulation_controllers:={final_simulation_controllers}'
+        )
 
     robot_description = {
         'robot_description': ParameterValue(Command([xacro_cmd]), value_type=str)
@@ -101,14 +111,18 @@ def launch_setup(context):
 
     actions = [
         robot_state_publisher,
-        controller_manager,
+        # gz_ros2_control's <gazebo> plugin (pantilt.urdf.xacro) spawns controller_manager
+        # itself, embedded inside the gz_sim process, when hw_type != 'real'.
+        *([controller_manager] if hw_type == 'real' else []),
         TimerAction(period=2.0, actions=[Node(
             package='controller_manager', executable='spawner',
-            arguments=['joint_state_broadcaster', '-c', '/controller_manager'], output='both',
+            arguments=['joint_state_broadcaster', '-c', '/controller_manager',
+                       '--controller-manager-timeout', '30'], output='both',
         )]),
         TimerAction(period=2.5, actions=[Node(
             package='controller_manager', executable='spawner',
-            arguments=['pantilt_controller', '-c', '/controller_manager'], output='both',
+            arguments=['pantilt_controller', '-c', '/controller_manager',
+                       '--controller-manager-timeout', '30'], output='both',
         )]),
         teleop_launch,
     ]
@@ -146,6 +160,17 @@ def generate_launch_description():
             'use_sim_time',
             default_value='false',
             description='Use /clock from a simulator instead of system time.',
+        ),
+        DeclareLaunchArgument(
+            'ros2_control_hardware_type',
+            default_value='real',
+            description='"real" for the STS hardware plugin, "gazebo" for gz_ros2_control/GazeboSimSystem.',
+        ),
+        DeclareLaunchArgument(
+            'simulation_controllers',
+            default_value='',
+            description='Controllers YAML for the embedded gz_ros2_control controller_manager; empty means '
+                        'config/pantilt_config.yaml. Only used when ros2_control_hardware_type != "real".',
         ),
     ]
 

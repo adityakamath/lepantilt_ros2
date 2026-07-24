@@ -101,12 +101,16 @@
       </collision>
     </link>
 
-    <!-- For the Pan and Tilt joints below, velocity="1e6": 
+    <!-- For the Pan and Tilt joints below, velocity="1e6" in real mode:
     URDF requires a velocity attribute on revolute joints, but hardware-enforced
     velocity profiling makes software rate-limiting redundant and causes spurious
     "command out of limits" errors from ros2_control when joy_teleop sends large absolute
     position steps. 1e6 rad/s is physically unreachable and effectively disables the
-    JointSaturationLimiter's per-cycle velocity clipping for these joints. -->
+    JointSaturationLimiter's per-cycle velocity clipping for these joints.
+    In gazebo mode there's no hardware doing that profiling - GazeboSimSystem uses this
+    same <limit velocity> to bound the simulated joint's motion, so 1e6 there would mean
+    the joint snaps to commanded position essentially instantly. Use the real computed
+    ceiling (pantilt_max_velocity_rads, pantilt.control.xacro) instead in that case. -->
 
     <!-- Pan joint (revolute) -->
     <joint name="pan_joint" type="revolute">
@@ -114,7 +118,7 @@
       <child link="pan_link"/>
       <origin xyz="${pan_joint_x} 0 ${pan_joint_z}" rpy="0 0 0"/>
       <axis xyz="0 0 1"/>
-      <limit lower="${pan_joint_lower}" upper="${pan_joint_upper}" effort="${max_torque_nm}" velocity="1e6"/>
+      <limit lower="${pan_joint_lower}" upper="${pan_joint_upper}" effort="${max_torque_nm}" velocity="${1e6 if '$(arg ros2_control_hardware_type)' == 'real' else pantilt_max_velocity_rads}"/>
     </joint>
 
     <!-- Tilt joint (revolute) -->
@@ -123,7 +127,7 @@
       <child link="tilt_link"/>
       <origin xyz="${tilt_joint_x} 0 ${tilt_joint_z}" rpy="${tilt_joint_rx} ${tilt_joint_ry} 0"/>
       <axis xyz="0 0 -1"/>
-      <limit lower="${tilt_joint_lower}" upper="${tilt_joint_upper}" effort="${max_torque_nm}" velocity="1e6"/>
+      <limit lower="${tilt_joint_lower}" upper="${tilt_joint_upper}" effort="${max_torque_nm}" velocity="${1e6 if '$(arg ros2_control_hardware_type)' == 'real' else pantilt_max_velocity_rads}"/>
     </joint>
 
     <!-- OAK-D-S2 Camera + IMU -->
