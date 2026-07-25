@@ -4,8 +4,9 @@ Pan Tilt 100 ROS 2 control stack launch file.
 
 This launch file starts:
     - robot_state_publisher
-    - controller_manager (ros2_control) - real mode only; in gazebo mode,
-      pantilt.urdf.xacro's <gazebo> plugin spawns it embedded inside gz_sim instead
+    - controller_manager (ros2_control) - real mode uses the standard controller_manager
+      node; mujoco mode uses a modified ros2_control_node from the mujoco_ros2_control
+      package itself, which also hosts the MuJoCo simulation in-process
     - joint_state_broadcaster
     - pantilt_controller
     - (optionally) motor diagnostics
@@ -13,6 +14,9 @@ This launch file starts:
 Hardware parameters are read from urdf_config.yaml; sts_serial_port and
 use_mock can be overridden on the command line (empty string = use yaml value).
 """
+
+import subprocess
+import tempfile
 
 import yaml
 
@@ -33,13 +37,36 @@ def launch_setup(context):
     pantilt_config = LaunchConfiguration('pantilt_config').perform(context)
     use_sim_time   = LaunchConfiguration('use_sim_time').perform(context).lower() in ('true', '1')
     hw_type = LaunchConfiguration('ros2_control_hardware_type').perform(context)
-    simulation_controllers = LaunchConfiguration('simulation_controllers').perform(context)
+    mujoco_model    = LaunchConfiguration('mujoco_model').perform(context)
+    mujoco_headless = LaunchConfiguration('mujoco_headless').perform(context)
 
     pkg_ctrl = FindPackageShare('pt_control').perform(context)
     pkg_desc = FindPackageShare('pt_description').perform(context)
     xacro    = FindExecutable(name='xacro').perform(context)
 
-    final_simulation_controllers = simulation_controllers if simulation_controllers else f'{pkg_ctrl}/config/pantilt_config.yaml'
+    # pantilt.mjcf.xacro is itself a xacro template (MJCF has no native macro/conditional
+    # system - see its own header comment and mujoco_integration.md), so unlike a static
+    # per-variant file, this has to actually be xacro-processed here, same as
+    # robot_description below, except the result has to land on disk (a real file path)
+    # rather than staying an in-memory ROS parameter string, since MJCF's own <include>
+    # mechanism is filesystem-path-based. The same pantilt_config arg that already selects
+    # the URDF mesh variant below picks the MJCF mesh variant too - one argument for both.
+    # standalone defaults to true in pantilt.mjcf.xacro itself, which is what's wanted here
+    # (this package's own standalone launch) - not passed explicitly.
+    if mujoco_model:
+        final_mujoco_model = mujoco_model
+    elif hw_type == 'mujoco':
+        mjcf_xml = subprocess.run(
+            [xacro, f'{pkg_desc}/mjcf/pantilt.mjcf.xacro', f'pantilt_config:={pantilt_config}'],
+            capture_output=True, text=True, check=True,
+        ).stdout
+        mjcf_file = tempfile.NamedTemporaryFile(
+            mode='w', suffix='.xml', prefix='pantilt_mujoco_', delete=False)
+        mjcf_file.write(mjcf_xml)
+        mjcf_file.close()
+        final_mujoco_model = mjcf_file.name
+    else:
+        final_mujoco_model = ''
 
     _cfg = yaml.safe_load(open(f'{pkg_ctrl}/config/urdf_config.yaml'))
     final_serial_port = serial_port if serial_port else _cfg['serial_port']
@@ -63,10 +90,11 @@ def launch_setup(context):
         f' tilt_joint_lower:={_cfg["tilt_joint_lower"]}'
         f' tilt_joint_upper:={_cfg["tilt_joint_upper"]}'
     )
-    if hw_type != 'real':
+    if hw_type == 'mujoco':
         xacro_cmd += (
             f' ros2_control_hardware_type:={hw_type}'
-            f' simulation_controllers:={final_simulation_controllers}'
+            f' mujoco_model:={final_mujoco_model}'
+            f' mujoco_headless:={mujoco_headless}'
         )
 
     robot_description = {
@@ -93,6 +121,32 @@ def launch_setup(context):
         arguments=['--ros-args', '--log-level', 'rclcpp:=ERROR'],
     )
 
+    # mujoco_ros2_control ships its own ros2_control_node (same name, different package) -
+    # it also hosts the MuJoCo simulation itself, so there's no separate simulator process
+    # the way gz_ros2_control has gz_sim. use_sim_time:true is required here regardless of
+    # the launch arg - the mujoco_ros2_control_node's own physics clock is what /clock
+    # should follow whenever it's running.
+    # mujoco_ros2_control_plugins.yaml (CameraPlugin for the oak_rgb <camera>,
+    # pt_description/mjcf/oakd_s2_subtree.xml) is NOT loaded here yet - the installed apt
+    # package (ros-kilted-mujoco-ros2-control-plugins 0.0.3) only ships
+    # HeartbeatPublisherPlugin/ExternalWrenchPlugin, not CameraPlugin (that's newer than
+    # this release, confirmed via the plugin's own pluginlib manifest). Loading it anyway
+    # doesn't just skip the camera - it's a fatal plugin-loader error that took the whole
+    # hardware interface down with it (joint_state_broadcaster/pantilt_controller both
+    # failed to activate). Re-enable once a package version with CameraPlugin is available,
+    # or build mujoco_ros2_control_plugins from source.
+    mujoco_control_node = Node(
+        package='mujoco_ros2_control',
+        executable='ros2_control_node',
+        parameters=[
+            robot_description,
+            f'{pkg_ctrl}/config/pantilt_config.yaml',
+            {'use_sim_time': True},
+        ],
+        remappings=[('/diagnostics', '/controller_manager/diagnostics')],
+        output='both',
+    )
+
     teleop_launch = IncludeLaunchDescription(
         PythonLaunchDescriptionSource([
             PathJoinSubstitution([FindPackageShare('pt_control'), 'launch', 'teleop.launch.py'])
@@ -109,11 +163,11 @@ def launch_setup(context):
         ),
     ])
 
+    control_node_actions = [mujoco_control_node] if hw_type == 'mujoco' else [controller_manager]
+
     actions = [
         robot_state_publisher,
-        # gz_ros2_control's <gazebo> plugin (pantilt.urdf.xacro) spawns controller_manager
-        # itself, embedded inside the gz_sim process, when hw_type != 'real'.
-        *([controller_manager] if hw_type == 'real' else []),
+        *control_node_actions,
         TimerAction(period=2.0, actions=[Node(
             package='controller_manager', executable='spawner',
             arguments=['joint_state_broadcaster', '-c', '/controller_manager',
@@ -164,13 +218,23 @@ def generate_launch_description():
         DeclareLaunchArgument(
             'ros2_control_hardware_type',
             default_value='real',
-            description='"real" for the STS hardware plugin, "gazebo" for gz_ros2_control/GazeboSimSystem.',
+            description='"real" for the STS hardware plugin, "mujoco" for '
+                        'mujoco_ros2_control/MujocoSystemInterface. ("gazebo" is also supported at the '
+                        'URDF/xacro level - pantilt.control.xacro/pantilt.urdf.xacro - but not wired into '
+                        'this launch file.)',
         ),
         DeclareLaunchArgument(
-            'simulation_controllers',
+            'mujoco_model',
             default_value='',
-            description='Controllers YAML for the embedded gz_ros2_control controller_manager; empty means '
-                        'config/pantilt_config.yaml. Only used when ros2_control_hardware_type != "real".',
+            description='Path to a pre-built MJCF file to load; empty means xacro-process '
+                        'pt_description/mjcf/pantilt.mjcf.xacro with pantilt_config at launch '
+                        'time instead (so pantilt_config alone picks the pt100/pt101 MJCF too). Only '
+                        'used when ros2_control_hardware_type:="mujoco".',
+        ),
+        DeclareLaunchArgument(
+            'mujoco_headless',
+            default_value='false',
+            description='[mujoco only] Run without the MuJoCo Simulate viewer window.',
         ),
     ]
 

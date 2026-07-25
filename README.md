@@ -2,8 +2,8 @@
 
 ![Project Status](https://img.shields.io/badge/Status-Active-brightgreen)
 ![ROS 2](https://img.shields.io/badge/ROS%202-Kilted%20(Ubuntu%2024.04)-blue?style=flat&logo=ros&logoSize=auto)
-[![CI](https://github.com/adityakamath/pantilt100/actions/workflows/ci.yml/badge.svg)](https://github.com/adityakamath/pantilt100/actions/workflows/ci.yml)
-[![Ask DeepWiki (Experimental)](https://deepwiki.com/badge.svg)](https://deepwiki.com/adityakamath/pantilt100)
+[![CI](https://github.com/adityakamath/pantilt_ros2/actions/workflows/ci.yml/badge.svg)](https://github.com/adityakamath/pantilt_ros2/actions/workflows/ci.yml)
+[![Ask DeepWiki (Experimental)](https://deepwiki.com/badge.svg)](https://deepwiki.com/adityakamath/pantilt_ros2)
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
 
 ROS 2 software stack for a 2-DOF pan-tilt camera mount using [SO-ARM100](https://github.com/TheRobotStudio/SO-ARM100) parts, [Feetech STS3215](https://www.feetechrc.com/2020-05-13_56655.html) servo motors and an [OAK-D S2](https://docs.luxonis.com/hardware/products/OAK-D%20S2) camera. Provides position control with joystick teleop, visual-inertial odometry (VIO) bringup, and an embeddable xacro module for integration into other robots like the [lekiwi_ros2](https://github.com/adityakamath/lekiwi_ros2) project.
@@ -55,6 +55,7 @@ tilt_center_steps: 2646
 - **[depthai-ros](https://github.com/luxonis/depthai-ros)** — DepthAI ROS 2 driver for the OAK-D S2 Camera
 - **[cloudini](https://github.com/facontidavide/cloudini)** — high-performance point cloud compression library; required by `pt_bringup` for the PCL compressor node (point cloud mode only)
 - **[joy_teleop](https://index.ros.org/p/joy_teleop/)** — joystick-to-topic bridge (included in this package's launch)
+- **[mujoco_ros2_control](https://github.com/ros-controls/mujoco_ros2_control)** / **mujoco_ros2_control_plugins** — `sim:=true` only (see [Simulation](#simulation)); `sudo apt install ros-kilted-mujoco-ros2-control`
 
 > **⚠️ Joystick:** `joy_teleop` is included but the [`joy`](https://github.com/ros-drivers/joystick_drivers) node is **not** — it must be started separately (on the same or a networked device) before the system will respond to controller input:
 > ```bash
@@ -81,11 +82,17 @@ Install [depthai-ros](https://docs.luxonis.com/software/ros/depthai-ros/) via ap
 sudo apt install ros-kilted-depthai-ros
 ```
 
+Optional, only needed for `sim:=true` (see [Simulation](#simulation)):
+
+```bash
+sudo apt install ros-kilted-mujoco-ros2-control
+```
+
 Then clone and build this package and its dependencies:
 
 ```bash
 cd <your workspace>/src
-git clone https://github.com/adityakamath/pantilt100.git
+git clone https://github.com/adityakamath/pantilt_ros2.git
 git clone https://github.com/adityakamath/sts_hardware_interface.git
 git clone https://github.com/facontidavide/cloudini.git
 
@@ -97,7 +104,7 @@ source install/setup.bash
 
 ### As part of lekiwi_ros2
 
-pantilt100 is included as a git submodule under `payloads/pantilt100/` in [lekiwi_ros2](https://github.com/adityakamath/lekiwi_ros2). After cloning lekiwi_ros2, initialise the submodule:
+pantilt_ros2 is included as a git submodule under `payloads/pantilt_ros2/` in [lekiwi_ros2](https://github.com/adityakamath/lekiwi_ros2). After cloning lekiwi_ros2, initialise the submodule:
 
 ```bash
 git submodule update --init --recursive
@@ -141,13 +148,13 @@ ros2 launch pt_bringup pantilt.launch.py
 ros2 launch pt_control pantilt.launch.py use_mock:=true
 ```
 
-### Gazebo simulation
+### MuJoCo simulation
 
 ```bash
 ros2 launch pt_bringup pantilt.launch.py sim:=true
 ```
 
-Runs the pan-tilt in Gazebo via `gz_ros2_control` instead of real hardware — same controllers, same teleop, only the hardware layer differs. `oakd` (real camera driver) is skipped; no simulated camera yet. See [Gazebo Simulation](#gazebo-simulation) below.
+Runs the pan-tilt in MuJoCo instead of real hardware — same controllers, same teleop, only the hardware layer differs. `oakd` (real camera driver) is skipped; a simulated RGB camera is scaffolded but not active yet, see [Simulation](#simulation) below.
 
 ### Launch arguments
 
@@ -158,18 +165,20 @@ Runs the pan-tilt in Gazebo via `gz_ros2_control` instead of real hardware — s
 | `diagnostics`     | `pt_control`, `pt_bringup` | `true`  | Launch motor diagnostics node                      |
 | `pantilt_config`  | `pt_control`, `pt_bringup` | `pt101` | Pan-tilt mesh variant: `pt100` or `pt101` (`pt101` is recommended and default, see [Mesh variants](#mesh-variants-pantilt_config)) |
 | `pointcloud`      | `pt_bringup`                  | `false` | Use `oakd_vio_pcl.yaml` (depth aligned to RGB + point cloud) instead of `oakd_vio.yaml` (depth unaligned, no point cloud). Also gates point cloud compression. |
-| `octomap`         | `pt_bringup`                  | `false` | Run `octomap_server` on `/oak/rgbd/points` to build a persistent 3D octree. Only takes effect when `pointcloud:=true`. |
-| `tf_parent_frame` | `pt_bringup`                  | `tilt_link` | TF frame the OAK-D S2 is mounted to. Override when reusing `oakd.launch.py` to mount the camera elsewhere (e.g. directly on a host robot without the pan-tilt) |
+| `octomap`         | `pt_bringup` (`oakd.launch.py` only) | `false` | Run `octomap_server` on `/oak/rgbd/points` to build a persistent 3D octree. Only takes effect when `pointcloud:=true`. Not forwarded by `pantilt.launch.py` - launch `oakd.launch.py` directly to use it. |
+| `tf_parent_frame` | `pt_bringup` (`oakd.launch.py` only) | `tilt_link` | TF frame the OAK-D S2 is mounted to. Override when reusing `oakd.launch.py` to mount the camera elsewhere (e.g. directly on a host robot without the pan-tilt). Not forwarded by `pantilt.launch.py`. |
 | `use_sim_time`    | `pt_control`, `pt_bringup` | `false` | Use `/clock` from a simulator instead of system time |
-| `sim`              | `pt_bringup`                  | `false` | Run against Gazebo instead of real hardware: starts `gz_sim`, uses `gz_ros2_control` for the pan-tilt mechanism, forces `use_sim_time`/`use_mock`, and skips `oakd` (no simulated equivalent yet) |
-| `gui`              | `pt_bringup`                  | `true`  | [`sim` only] Launch Gazebo with the GUI client attached |
+| `sim`              | `pt_bringup`                  | `false` | Run against MuJoCo instead of real hardware: forces `use_sim_time`/`use_mock`, and skips `oakd` (no simulated equivalent yet) |
+| `gui`              | `pt_bringup`                  | `true`  | [`sim` only] Launch with the MuJoCo Simulate viewer attached |
+| `mujoco_model`     | `pt_control`                  | `""`    | [`sim` only] Path to a pre-built MJCF file; empty means xacro-process `pt_description/mjcf/pantilt.mjcf.xacro` with `pantilt_config` at launch time instead (so `pantilt_config` alone picks the pt100/pt101 MJCF too) |
+| `mujoco_headless`  | `pt_control`                  | `false` | [`sim` only] Run without the MuJoCo Simulate viewer window (set automatically from `gui` when launched via `pt_bringup`) |
 
 > **Note:** All hardware parameters (serial port, baud rate, motor IDs, center steps, joint limits, etc.) are configured in [`pt_control/config/urdf_config.yaml`](pt_control/config/urdf_config.yaml). `sts_serial_port` and `use_mock` can be overridden at launch time; all other parameters must be changed in the yaml file directly.
 
 ## Package Structure
 
 ```text
-pantilt100/
+pantilt_ros2/
 ├── pt_description/             # URDF model, meshes, and visualization launch
 │   ├── urdf/
 │   │   ├── pantilt.common.xacro   # Geometry constants and visual offsets
@@ -181,6 +190,10 @@ pantilt100/
 │   │   ├── pt101.urdf             # Pre-generated standalone URDF (pantilt_config=pt101, default, recommended)
 │   │   └── oakd_s2.module.xacro   # OAK-D S2 camera and IMU macro
 │   ├── meshes/                    # STL files for pan-tilt body and OAK-D S2
+│   ├── mjcf/                      # MuJoCo scene description (mujoco_ros2_control)
+│   │   ├── pantilt_shared.xml     # Compiler options, shared meshes/materials, default classes, actuators
+│   │   ├── oakd_s2_subtree.xml    # tilt_link + OAK-D S2 mount - fully shared between pt100/pt101
+│   │   └── pantilt.mjcf.xacro     # pantilt_body macro + pantilt_config-driven mesh/offset selection; standalone arg (default true) gates ground plane + lighting
 │   └── launch/
 │       └── urdf.launch.py         # Visualization-only launch file (robot_state_publisher)
 │
@@ -188,7 +201,8 @@ pantilt100/
 │   ├── config/
 │   │   ├── urdf_config.yaml       # Hardware parameters (serial port, motor IDs, center steps, joint limits)
 │   │   ├── pantilt_config.yaml    # Controller manager, spawner types, joint limits
-│   │   └── teleop_config.yaml     # joy_teleop axis/button mapping
+│   │   ├── teleop_config.yaml     # joy_teleop axis/button mapping
+│   │   └── mujoco_ros2_control_plugins.yaml  # CameraPlugin config for oak_rgb - not currently loaded, see Camera (oak_rgb)
 │   └── launch/
 │       ├── pantilt.launch.py      # Control stack (RSP, controller_manager, spawners, teleop)
 │       └── teleop.launch.py       # joy_teleop node in isolation
@@ -223,6 +237,8 @@ The URDF is split across several xacro files with distinct responsibilities:
 
 Both pan and tilt joints use `velocity="1e6"` in their URDF `<limit>` elements. See [Design](#design) for the reason.
 
+`mjcf/` holds the MuJoCo scene description (see [Simulation](#simulation)) - a separate, hand-authored set of files, not generated from the xacro above.
+
 #### Mesh variants (`pantilt_config`)
 
 This is the source of the project's naming convention: **PT100** is built with [SO-ARM100](https://github.com/TheRobotStudio/SO-ARM100) base/shoulder parts, and **PT101** is built with the equivalent [SO-ARM101](https://github.com/TheRobotStudio/SO-ARM101) parts. `pantilt.urdf.xacro` (and `pantilt.common.xacro`) accept a `pantilt_config` arg — `pt101` (default) or `pt100` — that selects the matching mesh set for `pantilt_base_link` and `pan_link`.
@@ -237,6 +253,8 @@ sed -i 's#package://pt_description/meshes/#../meshes/#g' pt100.urdf
 ```
 
 ### pt_control
+
+Starts whichever control-node process matches `ros2_control_hardware_type`: the standard `controller_manager`/`ros2_control_node` for `real`, or `mujoco_ros2_control`'s own `ros2_control_node` for `mujoco` (it hosts the MuJoCo simulation itself, so this package owns that dependency).
 
 Hardware parameters are read from [`config/urdf_config.yaml`](pt_control/config/urdf_config.yaml) at launch time. `sts_serial_port` and `use_mock` can be overridden on the command line (empty string = use yaml value); all other parameters (motor IDs, center steps, joint limits, etc.) must be edited in the yaml directly.
 
@@ -258,7 +276,7 @@ Joystick axes map directly to **absolute** joint positions, not velocities. The 
 
 ### pt_bringup
 
-`pt_bringup/pantilt.launch.py` composes `pt_control/pantilt.launch.py` and `oakd.launch.py` and forwards the relevant arguments to each.
+`pt_bringup/pantilt.launch.py` composes `pt_control/pantilt.launch.py` with either `oakd.launch.py` (real hardware) or nothing further at all (`sim:=true` - `pt_control`'s own launch file already starts everything MuJoCo needs), forwarding the relevant arguments to each.
 
 `oakd.launch.py` launches the OAK-D S2 as a composable node container. `depth_to_scan` (`/oak/scan`) runs in both modes. A `PCLCompressorNode` (subscribes to `/oak/rgbd/points`, compresses using [cloudini](https://github.com/facontidavide/cloudini) at 1 mm resolution, publishes to `/oak/rgbd/points/compressed`) is only loaded when `pointcloud:=true` — the point cloud topic it depends on doesn't exist otherwise. The camera's TF parent is `tf_parent_frame` (default `tilt_link`), so this launch file can be reused as-is to bring up the OAK-D S2 on a host robot that doesn't have the pan-tilt, by overriding `tf_parent_frame` to the host's camera mount link.
 
@@ -396,13 +414,35 @@ The `pantilt_module` macro takes a `parent` link and an `origin` block. The `pan
 
 To suppress these spurious errors without disabling limit enforcement entirely, both joints use `velocity="1e6"` in their URDF `<limit>` elements (the URDF spec requires a value; `1e6` rad/s is physically unreachable) and `has_velocity_limits: false` in `pantilt_config.yaml`. Position limits (±π/2) remain enforced. The joint's `max_velocity` parameter, set to 85 % of the STS3215 hardware maximum (2890 steps/s), is the real upper bound on speed.
 
-## Gazebo Simulation
+## Simulation
 
-**`sim:=true` is highly experimental.** The configuration is grounded in real hardware where possible (the pan/tilt velocity ceiling used in gazebo mode is the same computed value the real STS3215 firmware is configured with, rather than the `1e6` placeholder used on real hardware — see [Position control and velocity limits](#position-control-and-velocity-limits) above), but it has not been verified running end-to-end — the only development machine so far has a GPU driver that can't complete Gazebo's rendering pipeline. Camera simulation is not implemented; `oakd` is skipped entirely under `sim:=true`.
+`pantilt.control.xacro`/`pantilt.joints.xacro` swap the `<hardware>` plugin based on `ros2_control_hardware_type` (`real` default) between `sts_hardware_interface/STSHardwareInterface`, `gz_ros2_control/GazeboSimSystem`, and `mujoco_ros2_control/MujocoSystemInterface`, and drop the STS-only telemetry state interfaces (`voltage`/`temperature`/`current`/`is_moving`) that neither simulator can back with real data. The pan/tilt velocity ceiling used in sim modes is the same computed value the real STS3215 firmware is configured with, rather than the `1e6` placeholder used on real hardware — see [Position control and velocity limits](#position-control-and-velocity-limits) above.
 
-`pantilt.control.xacro`/`pantilt.joints.xacro` swap the `<hardware>` plugin between `sts_hardware_interface/STSHardwareInterface` and `gz_ros2_control/GazeboSimSystem` based on `ros2_control_hardware_type` (`real` default, `gazebo` in sim), and drop the STS-only telemetry state interfaces (`voltage`/`temperature`/`current`/`is_moving`) that `GazeboSimSystem` can't back with simulated data. `pantilt.urdf.xacro` embeds a `<gazebo>` plugin block that spawns `controller_manager` inside the `gz_sim` process itself, rather than `pt_control/launch/pantilt.launch.py` starting its own — everything above the hardware interface (controllers, teleop) is the same code either way.
+**Only MuJoCo is wired into the launch files** (`sim:=true` below). Gazebo support exists at the URDF/xacro level only - `ros2_control_hardware_type:="gazebo"` is a real, valid value for `pantilt.control.xacro`, and `pantilt.urdf.xacro` embeds the `<gazebo>` plugin block `gz_ros2_control` needs - but nothing in `pt_control`/`pt_bringup`'s launch files knows how to drive it (no launch argument reaches `"gazebo"`, and there's no code to start `gz_sim` itself). Wiring it up would mean adding that launch-side plumbing back; the xacro side is already there.
 
-The pan-tilt can also be simulated as part of [lekiwi_ros2](https://github.com/adityakamath/lekiwi_ros2) (`ros2 launch lekiwi_bringup lekiwi.launch.py sim:=true payload:=pantilt`), where it shares the base's single `GazeboSimSystem` hardware component rather than running as its own — same reason the real robot has them on one serial bus.
+### MuJoCo
+
+MJCF is hand-authored under `pt_description/mjcf/` rather than converted from URDF — MuJoCo doesn't support the full xacro/URDF feature set, so `mujoco_ros2_control` itself only offers a "highly experimental" conversion tool. It's parametric like the URDF side, though, not one static file per variant: `pantilt_shared.xml` + `oakd_s2_subtree.xml` hold the content genuinely shared between pt100/pt101 (compiler options, meshes/materials, default classes, actuators, the tilt_link + OAK-D S2 mount), and `pantilt.mjcf.xacro` is a single `xacro`-processed file (mirroring `pantilt.module.xacro` and `pantilt.urdf.xacro`'s combined roles) defining a `pantilt_body` macro plus the `pantilt_config`-driven mesh/offset selection. An `xacro:arg standalone` (default `true`) gates whether it also emits its own `<worldbody>` invocation of the macro plus a ground plane and lighting: standalone use (`pt_control/launch/pantilt.launch.py` xacro-processes it at launch time, same `pantilt_config` arg this project already uses for meshes) leaves `standalone` at its default, while an embedder like lekiwi_ros2's own combined base+payload MJCF declares `standalone:=false` before including this file and instead invokes the `pantilt_body` macro at its own mount point (see [its README](../../README.md#simulation)).
+
+Unlike Gazebo, MuJoCo needs no separate simulator process, bridge, or entity spawn — `mujoco_ros2_control` ships its own `ros2_control_node` (same executable name, different package) that hosts the physics simulation in-process, so `pt_bringup/launch/pantilt.launch.py`'s `sim:=true` path starts nothing beyond `pt_control`'s own launch file.
+
+This backend has been validated at both levels, not just written and left unverified. Physics/model correctness was checked by compiling and stepping both variants via the plain `mujoco` Python package during development, which caught two real bugs before they'd have shown up as "the pan-tilt flings itself sideways for no reason" at runtime -
+- **Adjacent-body self-collision.** `pantilt_base_link`'s and `pan_link`'s collision meshes overlap slightly at the joint (real geometry, same as the URDF) - without an explicit `<contact><exclude>`, MuJoCo saw that as permanent interpenetration and applied a large corrective force from the very first physics step, which looked exactly like an uncommanded lurch away from rest. `pantilt_shared.xml` excludes each adjacent body pair, matching how `so_arm100` (built from the same source geometry) does the same.
+- **Floor contact.** `pantilt_base_link`'s mesh legitimately extends below its own mounting-plate reference plane (it's a bracket meant to bolt to something, not a part designed to rest on a floor) - a colliding ground plane in the demo scene caused the same kind of spurious contact force. The scene files' floor geom is visual-only (`contype="0" conaffinity="0"`).
+
+Both are fixed - the model holds position at rest with no commanded input and tracks a commanded `[1.0, -1.0]` rad target to within 0.06° for both `pt100`/`pt101`.
+
+The actual ROS/`mujoco_ros2_control` integration has also been run end-to-end (`ros2 launch pt_bringup pantilt.launch.py sim:=true gui:=false`, real hardware GPU has no bearing on this - headless MuJoCo doesn't need one): `MujocoSystemInterface` loads the MJCF, `controller_manager` activates it, `joint_state_broadcaster`/`pantilt_controller` load and activate, and a commanded `/pantilt_controller/commands` publishes physics-driven joint state changes over `/joint_states`, not a static echo. This is the one simulation backend in this repo that's actually been proven to run, not just configured correctly on paper.
+
+#### Camera (`oak_rgb`)
+
+`oakd_s2_subtree.xml` declares a MuJoCo `<camera name="oak_rgb" .../>` at the OAK-D S2 mount (`fovy=55` matches the real sensor's VFOV - both AF/FF variants land at 54-55°; resolution matches this project's real `oakd_vio.yaml` RGB config), and `pt_control/config/mujoco_ros2_control_plugins.yaml` configures `mujoco_ros2_control_plugins/CameraPlugin` to publish it onto the same topic names the real `depthai_ros_driver` uses (`/oak/rgb/image_raw`, `/oak/rgb/camera_info`, `/oak/stereo/image_raw`).
+
+**Not currently active** - `pt_control/launch/pantilt.launch.py` doesn't load that plugin config yet, for two independent reasons found by actually testing it:
+1. The installed `ros-kilted-mujoco-ros2-control-plugins` (v0.0.3) doesn't ship `CameraPlugin` at all - confirmed directly from its own pluginlib manifest, which only declares `HeartbeatPublisherPlugin` and `ExternalWrenchPlugin`. The plugin exists in the `ros-controls/mujoco_ros2_control` GitHub repo's current docs, but that's ahead of what's packaged for Kilted via apt. Loading a plugin config that names a nonexistent class isn't just skipped - it's a fatal plugin-loader error that took the whole hardware interface down with it (`joint_state_broadcaster`/`pantilt_controller` both failed to activate).
+2. Independent of that: `mujoco_ros2_control_node` attempts a render context for any `<camera>` in the model regardless of whether a plugin consumes it, and on this headless dev machine that failed ("Failed to initialize GLFW. Disabling camera publishing") rather than falling back to EGL the way the docs describe - possibly the same apt-vs-source version gap as `CameraPlugin`, not confirmed.
+
+The camera and its topic mapping are ready to go; re-enabling it (see the comment in `pt_control/launch/pantilt.launch.py`) needs either a newer `mujoco_ros2_control_plugins` release or building it from source, plus a machine where GLFW or EGL actually succeeds.
 
 ## Notes and Troubleshooting
 

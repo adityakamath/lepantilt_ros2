@@ -36,7 +36,7 @@ def generate_launch_description():
             "tf_parent_frame",
             default_value="tilt_link",
             description="TF frame the OAK-D S2 is mounted to. Default 'tilt_link' is correct "
-                         "for pantilt100; override when mounting the camera elsewhere "
+                         "for pantilt_ros2; override when mounting the camera elsewhere "
                          "(e.g. directly on a host robot without the pan-tilt).",
         ),
     ]

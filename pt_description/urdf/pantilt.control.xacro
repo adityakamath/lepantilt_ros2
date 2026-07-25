@@ -17,15 +17,22 @@
   <xacro:arg name="tilt_joint_lower"       default="-1.5708"/>  <!-- rad, default -π/2 -->
   <xacro:arg name="tilt_joint_upper"       default="1.5708"/>   <!-- rad, default +π/2 -->
 
-  <!-- Gazebo simulation -->
+  <!-- Simulation -->
   <!-- "real" (default) keeps the STS3215 serial hardware plugin below unchanged.
-       "gazebo" swaps the <hardware> plugin for gz_ros2_control/GazeboSimSystem, which
-       implements the same SystemInterface contract - the joints and controllers stay
-       identical either way. -->
+       "gazebo" swaps the <hardware> plugin for gz_ros2_control/GazeboSimSystem.
+       "mujoco" swaps it for mujoco_ros2_control/MujocoSystemInterface.
+       Both implement the same SystemInterface contract - the joints and controllers stay
+       identical in all three cases. -->
   <xacro:arg name="ros2_control_hardware_type" default="real"/>
   <!-- Path to the controllers YAML the embedded controller_manager should load; only
        used when the <gazebo> plugin below is actually instantiated (i.e. in sim). -->
   <xacro:arg name="simulation_controllers" default=""/>
+  <!-- mujoco mode only: path to the xacro-generated MJCF scene (pt_description/mjcf/
+       pantilt.mjcf.xacro, xacro-processed at launch time with pantilt_config picking the
+       pt100/pt101 mesh variant - see pt_control/launch/pantilt.launch.py) and whether to
+       open the MuJoCo Simulate viewer window. -->
+  <xacro:arg name="mujoco_model" default=""/>
+  <xacro:arg name="mujoco_headless" default="false"/>
 
   <!-- Hardware velocity ceiling — defined before <ros2_control> because the hardware
        plugin param references it directly. pantilt_joints receives the same value so
@@ -53,7 +60,12 @@
       <xacro:if value="${'$(arg ros2_control_hardware_type)' == 'gazebo'}">
         <plugin>gz_ros2_control/GazeboSimSystem</plugin>
       </xacro:if>
-      <xacro:unless value="${'$(arg ros2_control_hardware_type)' == 'gazebo'}">
+      <xacro:if value="${'$(arg ros2_control_hardware_type)' == 'mujoco'}">
+        <plugin>mujoco_ros2_control/MujocoSystemInterface</plugin>
+        <param name="mujoco_model">$(arg mujoco_model)</param>
+        <param name="headless">$(arg mujoco_headless)</param>
+      </xacro:if>
+      <xacro:if value="${'$(arg ros2_control_hardware_type)' == 'real'}">
         <plugin>sts_hardware_interface/STSHardwareInterface</plugin>
         <param name="serial_port">$(arg serial_port)</param>
         <param name="baud_rate">$(arg baud_rate)</param>
@@ -63,7 +75,7 @@
         <param name="max_velocity_steps">${sts_max_velocity_steps}</param>
         <param name="proportional_vel_max">$(arg proportional_vel_max)</param>
         <param name="reset_states_on_activate">true</param>
-      </xacro:unless>
+      </xacro:if>
     </hardware>
 
     <xacro:pantilt_joints

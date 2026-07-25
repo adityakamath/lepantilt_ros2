@@ -1,0 +1,71 @@
+<!--
+  Shared, variant-independent MJCF content for the PT100/PT101 pan-tilt: compiler options,
+  the meshes/materials common to both variants (motor housings, tilt link + OAK-D S2 - the
+  parts that don't differ between pt100/pt101), default classes, and actuators.
+
+  Values mirror pt_description/urdf/pantilt.common.xacro, pantilt.control.xacro, and
+  pantilt.module.xacro - see those files for the derivations (STS3215 velocity/torque math,
+  mesh-offset corrections, etc).
+
+  Mesh file= paths are $(find pt_description)-absolute, not meshdir-relative - this file is
+  only ever spliced in via pantilt.mjcf.xacro's <xacro:include> (a full xacro-level text
+  splice, processed in the same pass as the $(find) substitutions below), never loaded by
+  MuJoCo directly or via a plain, non-xacro <include>. MuJoCo resolves a compiler's meshdir
+  relative to the TOP-LEVEL model file's own directory, not the file where <compiler> is
+  textually declared (confirmed empirically, surprising at first) - since the actual
+  top-level file is wherever xacro's processed output ends up (a launch-time temp file, not
+  this directory), a relative meshdir here would silently resolve to the wrong location.
+-->
+<mujoco model="pantilt_shared" xmlns:xacro="http://www.ros.org/wiki/xacro">
+  <compiler angle="radian"/>
+
+  <asset>
+    <material name="light_grey" rgba="0.8 0.8 0.8 1.0"/>
+    <material name="charcoal" rgba="0.15 0.15 0.15 1.0"/>
+    <material name="transparent" rgba="1 0 0 0.3"/>
+
+    <!-- Shared across pt100/pt101 - only pantilt_base_link's and pan_link's own body
+         meshes differ between variants (declared in pantilt.mjcf.xacro). -->
+    <mesh name="pan_motor" file="$(find pt_description)/meshes/pan_motor.stl"/>
+    <mesh name="tilt_motor" file="$(find pt_description)/meshes/tilt_motor.stl"/>
+    <mesh name="tilt_joint_oakd_s2" file="$(find pt_description)/meshes/tilt_joint_oakd_s2.stl"/>
+    <mesh name="oakd_s2" file="$(find pt_description)/meshes/oakd_s2.stl"/>
+  </asset>
+
+  <default>
+    <default class="pantilt">
+      <!-- STS3215 servo, matches so_arm100 (same motor) -->
+      <joint frictionloss="0.1" armature="0.1"/>
+      <!-- forcerange = +-max_torque_nm (2.942 N*m, 30 kgf*cm) -->
+      <position kp="50" dampratio="1" forcerange="-2.942 2.942"/>
+      <default class="pan">
+        <joint axis="0 0 1" range="-1.5708 1.5708"/>
+      </default>
+      <default class="tilt">
+        <joint axis="0 0 -1" range="-1.5708 1.5708"/>
+      </default>
+      <default class="visual">
+        <geom type="mesh" contype="0" conaffinity="0" density="0" group="2"/>
+      </default>
+      <default class="collision">
+        <geom type="mesh" group="3" material="transparent"/>
+      </default>
+    </default>
+  </default>
+
+  <actuator>
+    <position class="pan" name="pan_joint" joint="pan_joint" inheritrange="1"/>
+    <position class="tilt" name="tilt_joint" joint="tilt_joint" inheritrange="1"/>
+  </actuator>
+
+  <!-- Adjacent bodies' collision meshes overlap slightly at the joint (same as the URDF's
+       real geometry) - without this, MuJoCo sees permanent interpenetration at rest and
+       applies a large corrective contact force from step 0, which then reads as the whole
+       mechanism flinging itself to one side under no commanded input. So_arm100 (same
+       source geometry) excludes the same way. Body names are identical across pt100/pt101,
+       so this applies to both variants from the shared file. -->
+  <contact>
+    <exclude body1="pantilt_base_link" body2="pan_link"/>
+    <exclude body1="pan_link" body2="tilt_link"/>
+  </contact>
+</mujoco>

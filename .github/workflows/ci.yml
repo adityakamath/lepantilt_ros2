@@ -32,7 +32,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          path: src/pantilt100
+          path: src/pantilt_ros2
 
       - name: Install ROS dependencies
         run: |
@@ -58,4 +58,4 @@ jobs:
         run: |
           . /opt/ros/kilted/setup.sh
           . install/setup.sh
-          xacro src/pantilt100/pt_description/urdf/pantilt.urdf.xacro > /dev/null
+          xacro src/pantilt_ros2/pt_description/urdf/pantilt.urdf.xacro > /dev/null

@@ -1,0 +1,41 @@
+<!--
+  tilt_link and its OAK-D S2 mount, as an includable fragment - meant to be spliced inside
+  pan_link's <body> in pt100_oakd_s2.xml/pt101_oakd_s2.xml. Fully shared between variants:
+  only pantilt_base_link's and pan_link's own meshes differ between pt100/pt101 (all
+  link/joint origins downstream of pan_link are identical - see pantilt.common.xacro).
+
+  oak_link/oak_link_model_origin are welded (no <joint>) rigid sub-bodies, mirroring the
+  two nested fixed joints oakd_s2_camera's macro creates in the URDF
+  (oakd_s2.module.xacro: ${camera_name}_center_joint, then ${camera_name}_model_origin_joint) -
+  kept as separate bodies rather than hand-composing the two rotations into one geom offset,
+  to avoid an error-prone manual matrix multiplication.
+-->
+<mujoco>
+  <body name="tilt_link" pos="0.0306 0 0.1025" euler="-1.5707963267948966 1.5707963267948966 0">
+    <inertial pos="0 0 0" mass="0.1" diaginertia="0.001 0.001 0.001"/>
+    <joint name="tilt_joint" class="tilt"/>
+    <geom mesh="tilt_joint_oakd_s2" material="light_grey" class="visual"
+          pos="0.119 0.0758 -0.0002" euler="1.5707963267948966 -1.5707963267948966 0"/>
+    <geom mesh="tilt_joint_oakd_s2" class="collision"
+          pos="0.119 0.0758 -0.0002" euler="1.5707963267948966 -1.5707963267948966 0"/>
+
+    <!-- OAK-D S2 camera mount (decorative mass, no collision - see mesh size note in
+         pantilt_shared.xml comment history / README). -->
+    <body name="oak_link" pos="-0.0306 -0.012165 0" euler="-1.5707963267948966 0 -1.5707963267948966">
+      <body name="oak_link_model_origin" euler="1.5707963267948966 0 1.5707963267948966">
+        <geom mesh="oakd_s2" class="visual" rgba="0.15 0.15 0.15 1.0"/>
+      </body>
+      <!-- RGB camera (mujoco_ros2_control_plugins/CameraPlugin, see
+           pt_control/config/mujoco_ros2_control_plugins.yaml). fovy=55 deg is the real
+           OAK-D S2 color sensor's VFOV (IMX378, both AF/FF variants land at 54-55 deg -
+           https://docs.luxonis.com/hardware/products/OAK-D%20S2); resolution matches this
+           project's real oakd_vio.yaml RGB config (640x400 @ 30 Hz). pos/quat="1 0 0 0"
+           (identity) is an approximation - it inherits oak_link's own mount orientation
+           rather than a measured optical-frame offset, since oakd_s2.module.xacro doesn't
+           define a dedicated RGB optical frame to copy a real offset from. MuJoCo's camera
+           looks down its own -Z with +Y up, which differs from ROS's optical convention
+           (+Z forward, +Y down) - the CameraPlugin docs note this; not corrected here. -->
+      <camera name="oak_rgb" fovy="55" resolution="640 400" pos="0 0 0" quat="1 0 0 0"/>
+    </body>
+  </body>
+</mujoco>
