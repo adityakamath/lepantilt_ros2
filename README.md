@@ -141,6 +141,14 @@ ros2 launch pt_bringup pantilt.launch.py
 ros2 launch pt_control pantilt.launch.py use_mock:=true
 ```
 
+### Gazebo simulation
+
+```bash
+ros2 launch pt_bringup pantilt.launch.py sim:=true
+```
+
+Runs the pan-tilt in Gazebo via `gz_ros2_control` instead of real hardware — same controllers, same teleop, only the hardware layer differs. `oakd` (real camera driver) is skipped; no simulated camera yet. See [Gazebo Simulation](#gazebo-simulation) below.
+
 ### Launch arguments
 
 | Argument          | Package                          | Default | Description                                        |
@@ -153,6 +161,8 @@ ros2 launch pt_control pantilt.launch.py use_mock:=true
 | `octomap`         | `pt_bringup`                  | `false` | Run `octomap_server` on `/oak/rgbd/points` to build a persistent 3D octree. Only takes effect when `pointcloud:=true`. |
 | `tf_parent_frame` | `pt_bringup`                  | `tilt_link` | TF frame the OAK-D S2 is mounted to. Override when reusing `oakd.launch.py` to mount the camera elsewhere (e.g. directly on a host robot without the pan-tilt) |
 | `use_sim_time`    | `pt_control`, `pt_bringup` | `false` | Use `/clock` from a simulator instead of system time |
+| `sim`              | `pt_bringup`                  | `false` | Run against Gazebo instead of real hardware: starts `gz_sim`, uses `gz_ros2_control` for the pan-tilt mechanism, forces `use_sim_time`/`use_mock`, and skips `oakd` (no simulated equivalent yet) |
+| `gui`              | `pt_bringup`                  | `true`  | [`sim` only] Launch Gazebo with the GUI client attached |
 
 > **Note:** All hardware parameters (serial port, baud rate, motor IDs, center steps, joint limits, etc.) are configured in [`pt_control/config/urdf_config.yaml`](pt_control/config/urdf_config.yaml). `sts_serial_port` and `use_mock` can be overridden at launch time; all other parameters must be changed in the yaml file directly.
 
@@ -385,6 +395,14 @@ The `pantilt_module` macro takes a `parent` link and an `origin` block. The `pan
 `joy_teleop` maps joystick axes to **absolute** position targets (axis position × π/2 rad). When the deadman button is first pressed or the joystick is moved quickly, the commanded target can jump by up to π rad in a single control cycle. ros2_control's `JointSaturationLimiter`, when `enforce_command_limits: true`, would normally clip such jumps using the URDF velocity limit — logging a `Command of at least one joint is out of limits` error on every affected cycle.
 
 To suppress these spurious errors without disabling limit enforcement entirely, both joints use `velocity="1e6"` in their URDF `<limit>` elements (the URDF spec requires a value; `1e6` rad/s is physically unreachable) and `has_velocity_limits: false` in `pantilt_config.yaml`. Position limits (±π/2) remain enforced. The joint's `max_velocity` parameter, set to 85 % of the STS3215 hardware maximum (2890 steps/s), is the real upper bound on speed.
+
+## Gazebo Simulation
+
+**`sim:=true` is highly experimental.** The configuration is grounded in real hardware where possible (the pan/tilt velocity ceiling used in gazebo mode is the same computed value the real STS3215 firmware is configured with, rather than the `1e6` placeholder used on real hardware — see [Position control and velocity limits](#position-control-and-velocity-limits) above), but it has not been verified running end-to-end — the only development machine so far has a GPU driver that can't complete Gazebo's rendering pipeline. Camera simulation is not implemented; `oakd` is skipped entirely under `sim:=true`.
+
+`pantilt.control.xacro`/`pantilt.joints.xacro` swap the `<hardware>` plugin between `sts_hardware_interface/STSHardwareInterface` and `gz_ros2_control/GazeboSimSystem` based on `ros2_control_hardware_type` (`real` default, `gazebo` in sim), and drop the STS-only telemetry state interfaces (`voltage`/`temperature`/`current`/`is_moving`) that `GazeboSimSystem` can't back with simulated data. `pantilt.urdf.xacro` embeds a `<gazebo>` plugin block that spawns `controller_manager` inside the `gz_sim` process itself, rather than `pt_control/launch/pantilt.launch.py` starting its own — everything above the hardware interface (controllers, teleop) is the same code either way.
+
+The pan-tilt can also be simulated as part of [lekiwi_ros2](https://github.com/adityakamath/lekiwi_ros2) (`ros2 launch lekiwi_bringup lekiwi.launch.py sim:=true payload:=pantilt`), where it shares the base's single `GazeboSimSystem` hardware component rather than running as its own — same reason the real robot has them on one serial bus.
 
 ## Notes and Troubleshooting
 
