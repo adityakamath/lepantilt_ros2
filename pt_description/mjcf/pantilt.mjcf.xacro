@@ -1,64 +1,30 @@
 <?xml version="1.0"?>
-<!-- Parametric PT100/PT101 MJCF assembly - the mujoco_ros2_control equivalent of
-     pantilt.module.xacro *and* pantilt.urdf.xacro combined: defines the pantilt_body macro
-     plus the mesh/property selection it depends on (driven by the SAME pantilt_config arg
-     used throughout the URDF side - pantilt.common.xacro:pantilt_config - rather than a
-     separate near-duplicate file per variant), and - only when used standalone, see
-     `standalone` below - invokes that macro directly in worldbody plus a floor/lighting
-     scene for direct viewing.
+<!-- Parametric PT100/PT101 MJCF assembly (mujoco_ros2_control equivalent of
+     pantilt.module.xacro + pantilt.urdf.xacro): defines the pantilt_body macro, selected by
+     pantilt_config, and when standalone:=true (default) invokes it in worldbody plus a
+     floor/lighting scene.
 
-     Standalone use (`standalone` defaults to true):
-       xacro pantilt.mjcf.xacro pantilt_config:=pt101 > /tmp/pantilt.xml
-       python3 -m mujoco.viewer, mjcf flag pointed at /tmp/pantilt.xml
-     pt_control/launch/pantilt.launch.py runs this same command at launch time (sim:=true)
-     and writes the result to a temp file, passed as mujoco_model.
+     Standalone: xacro pantilt.mjcf.xacro pantilt_config:=pt101 > /tmp/pantilt.xml
+     pt_control/launch/pantilt.launch.py runs the same command at launch time.
 
-     Embedded use (lekiwi_ros2's base_pantilt.mjcf.xacro, base + payload combined): included
-     via xacro:include with the `pantilt_body` macro invoked at whatever mount point the
-     includer chooses, and the worldbody+scene block below suppressed - the includer declares
-     its OWN `<xacro:arg name="standalone" default="false"/>` *before* including this file,
-     which wins over this file's own `default="true"` (xacro resolves an arg's default from
-     whichever `<xacro:arg>` declaration is encountered FIRST in processing order, confirmed
-     empirically - a later re-declaration of the same arg name is silently ignored, so the
-     includer declaring it first is what makes this safe without also having to remember to
-     pass `standalone:=false` explicitly on every xacro invocation). Without this, embedding
-     would duplicate the whole pan-tilt assembly - a stray top-level worldbody with a second
-     pantilt_base_link, in addition to the correctly-mounted one (hit this for real before
-     splitting worldbody-emission out behind this arg).
-
-     Processed with the `xacro` CLI, same tool and convention as every other file in this
-     project's urdf/ trees - MJCF has no native macro/conditional system of its own, so this
-     reuses xacro instead of hand-duplicating pt100_oakd_s2.xml/pt101_oakd_s2.xml (the
-     two-static-file approach used in this file's own first draft, replaced here).
-
-     $(find pt_description) is used for every cross-file reference instead of a relative
-     path, so this resolves correctly regardless of where the FINAL xacro-processed output
-     ends up (a launch-time temp file, not necessarily this file's own directory) - unlike
-     raw MJCF's own <include>, which only supports filesystem-relative paths with no
-     $(find)-equivalent. -->
+     Embedded (lekiwi_ros2's base_pantilt.mjcf.xacro): the includer declares its own
+     standalone:=false BEFORE including this file, which wins - xacro takes the first
+     <xacro:arg> declaration of a given name, later ones are ignored - and invokes
+     pantilt_body itself at its own mount point. Without this the worldbody+scene block
+     below would duplicate the whole assembly. -->
 <mujoco xmlns:xacro="http://www.ros.org/wiki/xacro" model="pantilt">
   <xacro:arg name="pantilt_config" default="pt101"/>
   <xacro:arg name="standalone" default="true"/>
   <xacro:property name="pantilt_config" value="$(arg pantilt_config)"/>
 
-  <!-- xacro:include (a full text-level splice at xacro-PROCESS time), not a plain MJCF
-       <include> - pantilt_shared.xml's own mesh file= paths use $(find pt_description),
-       which only xacro itself resolves; a plain <include> would leave that text
-       unprocessed for MuJoCo to choke on. See pantilt_shared.xml's own header comment for
-       why its meshdir was replaced with absolute paths in the first place. -->
+  <!-- xacro:include, not a plain <include> - pantilt_shared.xml's mesh paths use $(find),
+       which only xacro resolves. -->
   <xacro:include filename="$(find pt_description)/mjcf/pantilt_shared.xml"/>
 
   <!-- Mesh files and mesh-local offset corrections - pt100 defaults below, overridden for
-       pt101. Values match pt_description/urdf/pantilt.common.xacro's own
-       pantilt_base_mesh/pan_joint_mesh/*_rpy/*_xyz properties in spirit (same physical
-       corrections), but are NOT literally $(find)-included from that file and reused
-       as-is: URDF's rpy and MuJoCo's default euler attribute do not compose rotations in
-       the same order (confirmed empirically - lekiwi_ros2's base_shared.xml has the same
-       caveat in its own wheel-orientation comment), so porting a multi-axis rpy value
-       directly as a MuJoCo euler value is only safe to verify case-by-case, not to assume. These
-       euler values are ported from and identical to what shipped in this project's
-       original (pre-parametrization) pt100_oakd_s2.xml/pt101_oakd_s2.xml files, each
-       validated individually before this file merged them - not re-derived here. -->
+       pt101. Not $(find)-included from pantilt.common.xacro's equivalent properties: URDF's
+       rpy and MuJoCo's euler don't compose rotations the same way, so these were each
+       independently validated rather than ported directly. -->
   <xacro:property name="pantilt_base_mesh" value="pantilt_base_100.stl"/>
   <xacro:property name="pan_link_mesh_file" value="pan_joint_100.stl"/>
   <xacro:property name="pantilt_base_geom_pos" value="0 0 0"/>
@@ -79,11 +45,9 @@
     <mesh name="pan_link_mesh" file="$(find pt_description)/meshes/${pan_link_mesh_file}"/>
   </asset>
 
-  <!-- pantilt_base_link carries no pos/euler of its own - it inherits whichever frame the
-       invocation site provides (worldbody below for standalone use, or a mount body in
-       lekiwi_ros2's base_pantilt.mjcf.xacro for the combined base+payload case). Collision
-       geoms match pantilt.module.xacro exactly: only the primary body mesh, not the
-       decorative "_motor" sub-meshes. -->
+  <!-- pantilt_base_link has no pos/euler of its own - it inherits the invocation site's
+       frame. Collision geoms cover only the primary body mesh, not the decorative "_motor"
+       sub-meshes. -->
   <xacro:macro name="pantilt_body">
     <body name="pantilt_base_link">
       <inertial pos="0 0 0" mass="1.0" diaginertia="0.01 0.01 0.01"/>
@@ -110,10 +74,9 @@
     </body>
   </xacro:macro>
 
-  <!-- Compares $(arg standalone) directly rather than through a bridged <xacro:property> -
-       xacro auto-coerces a property whose value is the literal string "true"/"false" into a
-       Python bool, so ${standalone == 'true'} would silently compare True (bool) == 'true'
-       (str) and always be False (confirmed empirically). -->
+  <!-- Compares $(arg standalone) directly, not via a bridged <xacro:property> - xacro
+       auto-coerces "true"/"false" property values to Python bool, breaking a naive
+       string comparison. -->
   <xacro:if value="${'$(arg standalone)' == 'true'}">
     <worldbody>
       <xacro:pantilt_body/>

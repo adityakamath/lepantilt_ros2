@@ -44,15 +44,9 @@ def launch_setup(context):
     pkg_desc = FindPackageShare('pt_description').perform(context)
     xacro    = FindExecutable(name='xacro').perform(context)
 
-    # pantilt.mjcf.xacro is itself a xacro template (MJCF has no native macro/conditional
-    # system - see its own header comment), so unlike a static
-    # per-variant file, this has to actually be xacro-processed here, same as
-    # robot_description below, except the result has to land on disk (a real file path)
-    # rather than staying an in-memory ROS parameter string, since MJCF's own <include>
-    # mechanism is filesystem-path-based. The same pantilt_config arg that already selects
-    # the URDF mesh variant below picks the MJCF mesh variant too - one argument for both.
-    # standalone defaults to true in pantilt.mjcf.xacro itself, which is what's wanted here
-    # (this package's own standalone launch) - not passed explicitly.
+    # MJCF must be xacro-processed here (unlike robot_description below, it has to land on
+    # disk since MJCF's <include> is filesystem-path-based, not an in-memory param string).
+    # Same pantilt_config arg picks both the URDF and MJCF mesh variant.
     if mujoco_model:
         final_mujoco_model = mujoco_model
     elif hw_type == 'mujoco':
@@ -121,20 +115,11 @@ def launch_setup(context):
         arguments=['--ros-args', '--log-level', 'rclcpp:=ERROR'],
     )
 
-    # mujoco_ros2_control ships its own ros2_control_node (same name, different package) -
-    # it also hosts the MuJoCo simulation itself, so there's no separate simulator process
-    # the way gz_ros2_control has gz_sim. use_sim_time:true is required here regardless of
-    # the launch arg - the mujoco_ros2_control_node's own physics clock is what /clock
-    # should follow whenever it's running.
-    # mujoco_ros2_control_plugins.yaml (CameraPlugin for the oak_rgb <camera>,
-    # pt_description/mjcf/oakd_s2_subtree.xml) is NOT loaded here yet - the installed apt
-    # package (ros-kilted-mujoco-ros2-control-plugins 0.0.3) only ships
-    # HeartbeatPublisherPlugin/ExternalWrenchPlugin, not CameraPlugin (that's newer than
-    # this release, confirmed via the plugin's own pluginlib manifest). Loading it anyway
-    # doesn't just skip the camera - it's a fatal plugin-loader error that took the whole
-    # hardware interface down with it (joint_state_broadcaster/pantilt_controller both
-    # failed to activate). Re-enable once a package version with CameraPlugin is available,
-    # or build mujoco_ros2_control_plugins from source.
+    # mujoco_ros2_control ships its own ros2_control_node, hosting the MuJoCo simulation
+    # itself - use_sim_time:true is required regardless of the launch arg. The
+    # mujoco_ros2_control_plugins.yaml CameraPlugin config isn't loaded here yet - the apt
+    # package (0.0.3) doesn't ship CameraPlugin, and loading a nonexistent plugin class is a
+    # fatal error, not a skip. See README's "Camera (oak_rgb)" section.
     mujoco_control_node = Node(
         package='mujoco_ros2_control',
         executable='ros2_control_node',

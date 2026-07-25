@@ -101,16 +101,10 @@
       </collision>
     </link>
 
-    <!-- For the Pan and Tilt joints below, velocity="1e6" in real mode:
-    URDF requires a velocity attribute on revolute joints, but hardware-enforced
-    velocity profiling makes software rate-limiting redundant and causes spurious
-    "command out of limits" errors from ros2_control when joy_teleop sends large absolute
-    position steps. 1e6 rad/s is physically unreachable and effectively disables the
-    JointSaturationLimiter's per-cycle velocity clipping for these joints.
-    In gazebo mode there's no hardware doing that profiling - GazeboSimSystem uses this
-    same <limit velocity> to bound the simulated joint's motion, so 1e6 there would mean
-    the joint snaps to commanded position essentially instantly. Use the real computed
-    ceiling (pantilt_max_velocity_rads, pantilt.control.xacro) instead in that case. -->
+    <!-- real mode: velocity="1e6" (unreachable) disables JointSaturationLimiter's clipping,
+         since joy_teleop's absolute position jumps would otherwise trip spurious limit
+         errors. gazebo mode: uses the real computed ceiling instead, since GazeboSimSystem
+         actually enforces this limit on the simulated joint. -->
 
     <!-- Pan joint (revolute) -->
     <joint name="pan_joint" type="revolute">

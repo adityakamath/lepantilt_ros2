@@ -149,19 +149,23 @@
       </geometry>
     </collision>
   </link>
-  <!-- For the Pan and Tilt joints below, velocity="1e6": 
+  <!-- For the Pan and Tilt joints below, velocity="1e6" in real mode:
     URDF requires a velocity attribute on revolute joints, but hardware-enforced
     velocity profiling makes software rate-limiting redundant and causes spurious
     "command out of limits" errors from ros2_control when joy_teleop sends large absolute
     position steps. 1e6 rad/s is physically unreachable and effectively disables the
-    JointSaturationLimiter's per-cycle velocity clipping for these joints. -->
+    JointSaturationLimiter's per-cycle velocity clipping for these joints.
+    In gazebo mode there's no hardware doing that profiling - GazeboSimSystem uses this
+    same <limit velocity> to bound the simulated joint's motion, so 1e6 there would mean
+    the joint snaps to commanded position essentially instantly. Use the real computed
+    ceiling (pantilt_max_velocity_rads, pantilt.control.xacro) instead in that case. -->
   <!-- Pan joint (revolute) -->
   <joint name="pan_joint" type="revolute">
     <parent link="pantilt_base_link"/>
     <child link="pan_link"/>
     <origin rpy="0 0 0" xyz="0.0452 0 0.0165"/>
     <axis xyz="0 0 1"/>
-    <limit effort="2.942" lower="-1.5708" upper="1.5708" velocity="1e6"/>
+    <limit effort="2.942" lower="-1.5708" upper="1.5708" velocity="1000000.0"/>
   </joint>
   <!-- Tilt joint (revolute) -->
   <joint name="tilt_joint" type="revolute">
@@ -169,7 +173,7 @@
     <child link="tilt_link"/>
     <origin rpy="-1.5707963267948966 1.5707963267948966 0" xyz="0.0306 0 0.1025"/>
     <axis xyz="0 0 -1"/>
-    <limit effort="2.942" lower="-1.5708" upper="1.5708" velocity="1e6"/>
+    <limit effort="2.942" lower="-1.5708" upper="1.5708" velocity="1000000.0"/>
   </joint>
   <!-- base_link of the sensor-->
   <link name="oak_link"/>
@@ -202,4 +206,12 @@
     <child link="oak_link_model_origin"/>
     <origin rpy="1.5707963267948966 0 1.5707963267948966" xyz="0 0 0"/>
   </joint>
+  <!-- Gazebo simulation: spawns controller_manager inside the gz_sim process, loading
+       $(arg simulation_controllers). Inert (ignored) outside Gazebo, so this is safe to
+       leave in place regardless of ros2_control_hardware_type. -->
+  <gazebo>
+    <plugin filename="gz_ros2_control-system" name="gz_ros2_control::GazeboSimROS2ControlPlugin">
+      <parameters></parameters>
+    </plugin>
+  </gazebo>
 </robot>

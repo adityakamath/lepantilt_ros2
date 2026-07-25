@@ -3,7 +3,7 @@
 	xmlns:xacro="http://ros.org/wiki/xacro">
 
 	<!--
-	  Custom OAK-D-S2 camera macro for pt100 only.
+	  Custom OAK-D-S2 camera macro, shared by both pt100/pt101.
 	  This version allows direct color parameterization (r/g/b/a) for the mesh material.
 	-->
 

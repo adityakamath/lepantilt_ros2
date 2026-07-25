@@ -15,14 +15,14 @@ find_package(cloudini_lib REQUIRED)
 find_package(cloudini_ros REQUIRED)
 
 # Point cloud compressor composable node
-add_library(colored_pointcloud_compressor_node SHARED
+add_library(pcl_compressor_node SHARED
   src/pcl_compressor_node.cpp
 )
-target_include_directories(colored_pointcloud_compressor_node PUBLIC
+target_include_directories(pcl_compressor_node PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
   $<INSTALL_INTERFACE:include>
 )
-ament_target_dependencies(colored_pointcloud_compressor_node
+ament_target_dependencies(pcl_compressor_node
   rclcpp
   rclcpp_components
   sensor_msgs
@@ -30,12 +30,12 @@ ament_target_dependencies(colored_pointcloud_compressor_node
   cloudini_lib
   cloudini_ros
 )
-rclcpp_components_register_node(colored_pointcloud_compressor_node
+rclcpp_components_register_node(pcl_compressor_node
   PLUGIN "pt_bringup::PCLCompressorNode"
   EXECUTABLE pcl_compressor
 )
 
-install(TARGETS colored_pointcloud_compressor_node
+install(TARGETS pcl_compressor_node
   ARCHIVE DESTINATION lib
   LIBRARY DESTINATION lib
   RUNTIME DESTINATION bin
