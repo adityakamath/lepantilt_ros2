@@ -24,7 +24,7 @@
      pass `standalone:=false` explicitly on every xacro invocation). Without this, embedding
      would duplicate the whole pan-tilt assembly - a stray top-level worldbody with a second
      pantilt_base_link, in addition to the correctly-mounted one (hit this for real before
-     splitting worldbody-emission out behind this arg - see mujoco_integration.md).
+     splitting worldbody-emission out behind this arg).
 
      Processed with the `xacro` CLI, same tool and convention as every other file in this
      project's urdf/ trees - MJCF has no native macro/conditional system of its own, so this
@@ -53,9 +53,9 @@
        pantilt_base_mesh/pan_joint_mesh/*_rpy/*_xyz properties in spirit (same physical
        corrections), but are NOT literally $(find)-included from that file and reused
        as-is: URDF's rpy and MuJoCo's default euler attribute do not compose rotations in
-       the same order (confirmed empirically - see base_shared.xml's wheel-orientation
-       comment and mujoco_integration.md), so porting a multi-axis rpy value directly as a
-       MuJoCo euler value is only safe to verify case-by-case, not to assume. These
+       the same order (confirmed empirically - lekiwi_ros2's base_shared.xml has the same
+       caveat in its own wheel-orientation comment), so porting a multi-axis rpy value
+       directly as a MuJoCo euler value is only safe to verify case-by-case, not to assume. These
        euler values are ported from and identical to what shipped in this project's
        original (pre-parametrization) pt100_oakd_s2.xml/pt101_oakd_s2.xml files, each
        validated individually before this file merged them - not re-derived here. -->
@@ -113,7 +113,7 @@
   <!-- Compares $(arg standalone) directly rather than through a bridged <xacro:property> -
        xacro auto-coerces a property whose value is the literal string "true"/"false" into a
        Python bool, so ${standalone == 'true'} would silently compare True (bool) == 'true'
-       (str) and always be False (confirmed empirically - see mujoco_integration.md). -->
+       (str) and always be False (confirmed empirically). -->
   <xacro:if value="${'$(arg standalone)' == 'true'}">
     <worldbody>
       <xacro:pantilt_body/>

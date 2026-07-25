@@ -45,7 +45,7 @@ def launch_setup(context):
     xacro    = FindExecutable(name='xacro').perform(context)
 
     # pantilt.mjcf.xacro is itself a xacro template (MJCF has no native macro/conditional
-    # system - see its own header comment and mujoco_integration.md), so unlike a static
+    # system - see its own header comment), so unlike a static
     # per-variant file, this has to actually be xacro-processed here, same as
     # robot_description below, except the result has to land on disk (a real file path)
     # rather than staying an in-memory ROS parameter string, since MJCF's own <include>
