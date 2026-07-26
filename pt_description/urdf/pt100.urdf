@@ -159,7 +159,7 @@
     <child link="pan_link"/>
     <origin rpy="0 0 0" xyz="0.0452 0 0.0165"/>
     <axis xyz="0 0 1"/>
-    <limit effort="1.9123" lower="-1.5708" upper="1.5708" velocity="1000000.0"/>
+    <limit effort="2.942" lower="-1.5708" upper="1.5708" velocity="1000000.0"/>
   </joint>
   <!-- Tilt joint (revolute) -->
   <joint name="tilt_joint" type="revolute">
@@ -167,7 +167,7 @@
     <child link="tilt_link"/>
     <origin rpy="-1.5707963267948966 1.5707963267948966 0" xyz="0.0306 0 0.1025"/>
     <axis xyz="0 0 -1"/>
-    <limit effort="1.9123" lower="-1.5708" upper="1.5708" velocity="1000000.0"/>
+    <limit effort="2.942" lower="-1.5708" upper="1.5708" velocity="1000000.0"/>
   </joint>
   <!-- base_link of the sensor-->
   <link name="oak_link"/>
