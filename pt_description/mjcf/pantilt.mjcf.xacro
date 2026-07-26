@@ -23,21 +23,23 @@
 
   <!-- Mesh files and mesh-local offset corrections - pt100 defaults below, overridden for
        pt101. Not $(find)-included from pantilt.common.xacro's equivalent properties: URDF's
-       rpy and MuJoCo's euler don't compose rotations the same way, so these were each
-       independently validated rather than ported directly. -->
+       rpy composes as Rz*Ry*Rx (fixed-axis roll,pitch,yaw) while MuJoCo's default euler="xyz"
+       composes as Rx*Ry*Rz - the reverse order. These only agree when rpy has a single nonzero
+       axis; every offset below has 2+ nonzero axes, so each is given as a quat computed
+       directly from the URDF's rpy (via its own Rz*Ry*Rx convention), not a ported euler. -->
   <xacro:property name="pantilt_base_mesh" value="pantilt_base_100.stl"/>
   <xacro:property name="pan_link_mesh_file" value="pan_joint_100.stl"/>
   <xacro:property name="pantilt_base_geom_pos" value="0 0 0"/>
-  <xacro:property name="pantilt_base_geom_euler" value="0 0 1.5707963267948966"/>
+  <xacro:property name="pantilt_base_geom_quat" value="0.5 0.5 0.5 0.5"/>
   <xacro:property name="pan_link_geom_pos" value="0 0 0"/>
-  <xacro:property name="pan_link_geom_euler" value="1.5707963267948966 0 1.5707963267948966"/>
+  <xacro:property name="pan_link_geom_quat" value="0.5 0.5 0.5 0.5"/>
   <xacro:if value="${pantilt_config == 'pt101'}">
     <xacro:property name="pantilt_base_mesh" value="pantilt_base_101.stl"/>
     <xacro:property name="pan_link_mesh_file" value="pan_joint_101.stl"/>
     <xacro:property name="pantilt_base_geom_pos" value="0 0 0.0002"/>
-    <xacro:property name="pantilt_base_geom_euler" value="1.5707963267948966 0 1.5707963267948966"/>
+    <xacro:property name="pantilt_base_geom_quat" value="0.5 0.5 0.5 0.5"/>
     <xacro:property name="pan_link_geom_pos" value="-0.0120 0 0.00205"/>
-    <xacro:property name="pan_link_geom_euler" value="1.5707963267948966 0 3.141592653589793"/>
+    <xacro:property name="pan_link_geom_quat" value="0.0 0.0 0.70710678 0.70710678"/>
   </xacro:if>
 
   <asset>
@@ -52,22 +54,22 @@
     <body name="pantilt_base_link">
       <inertial pos="0 0 0" mass="1.0" diaginertia="0.01 0.01 0.01"/>
       <geom mesh="pantilt_base_link_mesh" material="light_grey" class="visual"
-            pos="${pantilt_base_geom_pos}" euler="${pantilt_base_geom_euler}"/>
+            pos="${pantilt_base_geom_pos}" quat="${pantilt_base_geom_quat}"/>
       <geom mesh="pan_motor" material="charcoal" class="visual"
             pos="0 0 0" euler="0 0 1.5707963267948966"/>
       <geom mesh="pantilt_base_link_mesh" class="collision"
-            pos="${pantilt_base_geom_pos}" euler="${pantilt_base_geom_euler}"/>
+            pos="${pantilt_base_geom_pos}" quat="${pantilt_base_geom_quat}"/>
 
       <body name="pan_link" pos="0.0452 0 0.0165">
         <inertial pos="-9.07886e-05 0.0590972 0.031089" mass="0.119226"
                   diaginertia="5.94278e-05 5.89975e-05 3.13712e-05"/>
         <joint name="pan_joint" class="pan"/>
         <geom mesh="pan_link_mesh" material="light_grey" class="visual"
-              pos="${pan_link_geom_pos}" euler="${pan_link_geom_euler}"/>
+              pos="${pan_link_geom_pos}" quat="${pan_link_geom_quat}"/>
         <geom mesh="tilt_motor" material="charcoal" class="visual"
-              pos="0 0 0" euler="1.5707963267948966 0 1.5707963267948966"/>
+              pos="0 0 0" quat="0.5 0.5 0.5 0.5"/>
         <geom mesh="pan_link_mesh" class="collision"
-              pos="${pan_link_geom_pos}" euler="${pan_link_geom_euler}"/>
+              pos="${pan_link_geom_pos}" quat="${pan_link_geom_quat}"/>
 
         <include file="$(find pt_description)/mjcf/oakd_s2_subtree.xml"/>
       </body>
