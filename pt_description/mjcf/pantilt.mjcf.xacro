@@ -30,7 +30,9 @@
   <xacro:property name="pantilt_base_mesh" value="pantilt_base_100.stl"/>
   <xacro:property name="pan_link_mesh_file" value="pan_joint_100.stl"/>
   <xacro:property name="pantilt_base_geom_pos" value="0 0 0"/>
-  <xacro:property name="pantilt_base_geom_quat" value="0.5 0.5 0.5 0.5"/>
+  <!-- pt100's pantilt_base_100.stl URDF origin is rpy="0 0 pi/2" (single Z axis, unlike
+       pt101's) - quat is Rz(90) alone, not pt101's override value below. -->
+  <xacro:property name="pantilt_base_geom_quat" value="0.70710678 0 0 0.70710678"/>
   <xacro:property name="pan_link_geom_pos" value="0 0 0"/>
   <xacro:property name="pan_link_geom_quat" value="0.5 0.5 0.5 0.5"/>
   <xacro:if value="${pantilt_config == 'pt101'}">
