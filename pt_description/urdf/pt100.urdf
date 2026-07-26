@@ -54,7 +54,7 @@
     </joint>
   </ros2_control>
   <!--
-	  Custom OAK-D-S2 camera macro for pt100 only.
+	  Custom OAK-D-S2 camera macro, shared by both pt100/pt101.
 	  This version allows direct color parameterization (r/g/b/a) for the mesh material.
 	-->
   <!-- Standalone pantilt module instantiation -->
@@ -149,23 +149,17 @@
       </geometry>
     </collision>
   </link>
-  <!-- For the Pan and Tilt joints below, velocity="1e6" in real mode:
-    URDF requires a velocity attribute on revolute joints, but hardware-enforced
-    velocity profiling makes software rate-limiting redundant and causes spurious
-    "command out of limits" errors from ros2_control when joy_teleop sends large absolute
-    position steps. 1e6 rad/s is physically unreachable and effectively disables the
-    JointSaturationLimiter's per-cycle velocity clipping for these joints.
-    In gazebo mode there's no hardware doing that profiling - GazeboSimSystem uses this
-    same <limit velocity> to bound the simulated joint's motion, so 1e6 there would mean
-    the joint snaps to commanded position essentially instantly. Use the real computed
-    ceiling (pantilt_max_velocity_rads, pantilt.control.xacro) instead in that case. -->
+  <!-- real mode: velocity="1e6" (unreachable) disables JointSaturationLimiter's clipping,
+         since joy_teleop's absolute position jumps would otherwise trip spurious limit
+         errors. gazebo mode: uses the real computed ceiling instead, since GazeboSimSystem
+         actually enforces this limit on the simulated joint. -->
   <!-- Pan joint (revolute) -->
   <joint name="pan_joint" type="revolute">
     <parent link="pantilt_base_link"/>
     <child link="pan_link"/>
     <origin rpy="0 0 0" xyz="0.0452 0 0.0165"/>
     <axis xyz="0 0 1"/>
-    <limit effort="2.942" lower="-1.5708" upper="1.5708" velocity="1000000.0"/>
+    <limit effort="1.9123" lower="-1.5708" upper="1.5708" velocity="1000000.0"/>
   </joint>
   <!-- Tilt joint (revolute) -->
   <joint name="tilt_joint" type="revolute">
@@ -173,7 +167,7 @@
     <child link="tilt_link"/>
     <origin rpy="-1.5707963267948966 1.5707963267948966 0" xyz="0.0306 0 0.1025"/>
     <axis xyz="0 0 -1"/>
-    <limit effort="2.942" lower="-1.5708" upper="1.5708" velocity="1000000.0"/>
+    <limit effort="1.9123" lower="-1.5708" upper="1.5708" velocity="1000000.0"/>
   </joint>
   <!-- base_link of the sensor-->
   <link name="oak_link"/>

@@ -44,7 +44,10 @@
        pantilt_max_velocity_rads duplicates pantilt_joints' own local computation
        (pantilt.joints.xacro) - only used by module.xacro's gazebo-mode <limit velocity>,
        real mode keeps velocity="1e6" (see module.xacro's comment on why) regardless. -->
-  <xacro:property name="max_torque_nm"    value="2.942"/>  <!-- N⋅m (30 kgf⋅cm for STS3215) -->
+  <!-- 19.5 kgf*cm stall torque @ 7.4V per Feetech's STS3215-C001 datasheet (the SO-ARM100/101
+       variant this project uses, per pantilt_shared.xml's "matches so_arm100" comment) - not
+       the 30 kgf*cm figure, which belongs to a different 12V member of the ST3215 family. -->
+  <xacro:property name="max_torque_nm"    value="1.9123"/>  <!-- N⋅m (19.5 kgf⋅cm @ 7.4V) -->
   <xacro:property name="pantilt_max_velocity_steps" value="${int(sts_max_velocity_steps * 0.85)}"/>
   <xacro:property name="pantilt_max_velocity_rads"  value="${pantilt_max_velocity_steps * 2 * pi / 4096}"/>
   <xacro:property name="pan_joint_lower"  value="$(arg pan_joint_lower)"/>
