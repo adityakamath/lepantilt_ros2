@@ -19,13 +19,6 @@
   <exec_depend>pt_description</exec_depend>
   <exec_depend>sts_hardware_interface</exec_depend>
 
-  <!-- ros2_control_hardware_type:="mujoco" only - this package starts
-       mujoco_ros2_control's own ros2_control_node directly, which also hosts the MuJoCo
-       simulation itself. mujoco_ros2_control_plugins provides CameraPlugin, used for the
-       simulated OAK-D S2 RGB stream (config/mujoco_ros2_control_plugins.yaml). -->
-  <exec_depend>mujoco_ros2_control</exec_depend>
-  <exec_depend>mujoco_ros2_control_plugins</exec_depend>
-
   <test_depend>ament_lint_auto</test_depend>
   <test_depend>ament_lint_common</test_depend>
 

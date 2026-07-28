@@ -6,7 +6,7 @@
 [![Ask DeepWiki (Experimental)](https://deepwiki.com/badge.svg)](https://deepwiki.com/adityakamath/pantilt_ros2)
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
 
-ROS 2 software stack for a 2-DOF pan-tilt camera mount using [SO-ARM100](https://github.com/TheRobotStudio/SO-ARM100) parts, [Feetech STS3215](https://www.feetechrc.com/2020-05-13_56655.html) servo motors and an [OAK-D S2](https://docs.luxonis.com/hardware/products/OAK-D%20S2) camera. Provides position control with joystick teleop, visual-inertial odometry (VIO) bringup, and an embeddable xacro module for integration into other robots like the [lekiwi_ros2](https://github.com/adityakamath/lekiwi_ros2) project.
+ROS 2 software stack for a 2-DOF pan-tilt camera mount using [SO-ARM100](https://github.com/TheRobotStudio/SO-ARM100) parts, [Feetech STS3215](https://www.feetechrc.com/2020-05-13_56655.html) servo motors, and an [OAK-D S2](https://docs.luxonis.com/hardware/products/OAK-D%20S2) mount. Provides position control with joystick teleop and an embeddable xacro module for integration into other robots like the [lekiwi_ros2](https://github.com/adityakamath/lekiwi_ros2) project. The OAK-D S2 is modeled in the URDF as a mesh, link, and fixed joint only - no camera driver is included.
 
 <p align="center">
   <img width="500" height="575" alt="Screenshot 2026-04-28 at 15 56 11" src="https://github.com/user-attachments/assets/c9520454-7523-44a7-bcb3-8b6428437759" />
@@ -19,9 +19,8 @@ ROS 2 software stack for a 2-DOF pan-tilt camera mount using [SO-ARM100](https:/
 | Pan motor      | [Feetech STS3215](https://www.feetechrc.com/2020-05-13_56655.html), Motor ID `1`                 |
 | Tilt motor     | Feetech STS3215, Motor ID `2`                                                                    |
 | Servo driver   | [Waveshare Bus Servo Adapter A](https://www.waveshare.com/bus-servo-adapter-a.htm)               |
-| Camera         | [OAK-D S2](https://docs.luxonis.com/hardware/products/OAK-D%20S2)                                |
 | Structural     | 3D printed Base and shoulder parts from [SO-ARM100](https://github.com/TheRobotStudio/SO-ARM100) or [SO-ARM101](https://github.com/TheRobotStudio/SO-ARM101) |
-| Camera mount   | 3D printed OAK-D S2 bracket (STL in [`pt_description/meshes/`](pt_description/meshes/))    |
+| Camera mount   | 3D printed OAK-D S2 bracket (STL in [`pt_description/meshes/`](pt_description/meshes/)) — modeled in the URDF for TF/visual completeness; no [OAK-D S2](https://docs.luxonis.com/hardware/products/OAK-D%20S2) camera or driver is required or included |
 
 Both motors are chained together on a single serial bus at 1 Mbaud, connected to the host via the Waveshare servo driver. The URDF is simply the SO-ARM URDF, but only till the second joint. This is also the project's naming convention: **PT100** uses Base and shoulder parts from **SO-ARM100**, and **PT101** uses the equivalent parts from **SO-ARM101** — selected via the `pantilt_config` arg (see [Mesh variants](#mesh-variants-pantilt_config)).
 
@@ -52,52 +51,26 @@ tilt_center_steps: 2646
 - **[ROS 2 Kilted](https://docs.ros.org/en/kilted/)** — other distributions untested
 - **[ros2_control](https://control.ros.org/)** — controller manager, joint state broadcaster, forward command controller
 - **[sts_hardware_interface](https://github.com/adityakamath/sts_hardware_interface)** — hardware interface for Feetech STS servo motors
-- **[depthai-ros](https://github.com/luxonis/depthai-ros)** — DepthAI ROS 2 driver for the OAK-D S2 Camera
-- **[cloudini](https://github.com/facontidavide/cloudini)** — high-performance point cloud compression library; required by `pt_bringup` for the PCL compressor node (point cloud mode only)
 - **[joy_teleop](https://index.ros.org/p/joy_teleop/)** — joystick-to-topic bridge (included in this package's launch)
-- **[mujoco_ros2_control](https://github.com/ros-controls/mujoco_ros2_control)** / **mujoco_ros2_control_plugins** — `sim:=true` only (see [Simulation](#simulation)); `sudo apt install ros-kilted-mujoco-ros2-control`
 
 > **⚠️ Joystick:** `joy_teleop` is included but the [`joy`](https://github.com/ros-drivers/joystick_drivers) node is **not** — it must be started separately (on the same or a networked device) before the system will respond to controller input:
 > ```bash
 > ros2 run joy joy_node
 > ```
 
-## Raspberry Pi System Setup
-
-The OAK-D S2 requires USB 3.0 (5 Gbps) for its combined stereo depth, RGB, and IMU streams, and draws more current than the Raspberry Pi 5's default 600 mA USB cap allows. Add the following to `/boot/firmware/config.txt` and reboot to raise the cap:
-
-```
-usb_max_current_enable=1
-```
-
-> **⚠️ Note:** This raises the per-port USB current limit from 600 mA to 1200 mA. On an inadequate power supply, or with multiple high-power USB devices connected, this can cause brownouts. For best performance, use an adequate power supply that satisfies the recommended minimum for the Raspberry Pi and ensure the OAK-D S2 is the only high-current USB device on the bus.
-
 ## Installation
 
 ### Standalone
 
-Install [depthai-ros](https://docs.luxonis.com/software/ros/depthai-ros/) via apt:
-
-```bash
-sudo apt install ros-kilted-depthai-ros
-```
-
-Optional, only needed for `sim:=true` (see [Simulation](#simulation)):
-
-```bash
-sudo apt install ros-kilted-mujoco-ros2-control
-```
-
-Then clone and build this package and its dependencies:
+Clone and build this package and its dependencies:
 
 ```bash
 cd <your workspace>/src
 git clone https://github.com/adityakamath/pantilt_ros2.git
 git clone https://github.com/adityakamath/sts_hardware_interface.git
-git clone https://github.com/facontidavide/cloudini.git
 
 cd ..
-colcon build --packages-select cloudini_lib cloudini_ros pt_description pt_control pt_bringup sts_hardware_interface
+colcon build --packages-select pt_description pt_control pt_bringup sts_hardware_interface
 
 source install/setup.bash
 ```
@@ -130,31 +103,19 @@ This launches only the robot_state_publisher node with the Pan Tilt 100 URDF, fo
 ros2 launch pt_control pantilt.launch.py
 ```
 
-### Camera driver only
-
-```bash
-ros2 launch pt_bringup oakd.launch.py
-```
-
-### Full PT100 bringup (control + camera)
+### Full PT100 bringup
 
 ```bash
 ros2 launch pt_bringup pantilt.launch.py
 ```
+
+Currently equivalent to `pt_control pantilt.launch.py` directly - `pt_bringup` exists as the stable top-level entry point for this system, with no camera driver to compose in.
 
 ### Mock control stack (no hardware required)
 
 ```bash
 ros2 launch pt_control pantilt.launch.py use_mock:=true
 ```
-
-### MuJoCo simulation
-
-```bash
-ros2 launch pt_bringup pantilt.launch.py sim:=true
-```
-
-Runs the pan-tilt in MuJoCo instead of real hardware — same controllers, same teleop, only the hardware layer differs. `oakd` (real camera driver) is skipped; a simulated RGB camera is scaffolded but not active yet, see [Simulation](#simulation) below.
 
 ### Launch arguments
 
@@ -164,14 +125,7 @@ Runs the pan-tilt in MuJoCo instead of real hardware — same controllers, same 
 | `use_mock`        | `pt_control`, `pt_bringup` | `""`    | Mock mode override; empty means use `urdf_config.yaml` value   |
 | `diagnostics`     | `pt_control`, `pt_bringup` | `true`  | Launch motor diagnostics node                      |
 | `pantilt_config`  | `pt_control`, `pt_bringup` | `pt101` | Pan-tilt mesh variant: `pt100` or `pt101` (`pt101` is recommended and default, see [Mesh variants](#mesh-variants-pantilt_config)) |
-| `pointcloud`      | `pt_bringup`                  | `false` | Use `oakd_vio_pcl.yaml` (depth aligned to RGB + point cloud) instead of `oakd_vio.yaml` (depth unaligned, no point cloud). Also gates point cloud compression. |
-| `octomap`         | `pt_bringup` (`oakd.launch.py` only) | `false` | Run `octomap_server` on `/oak/rgbd/points` to build a persistent 3D octree. Only takes effect when `pointcloud:=true`. Not forwarded by `pantilt.launch.py` - launch `oakd.launch.py` directly to use it. |
-| `tf_parent_frame` | `pt_bringup` (`oakd.launch.py` only) | `tilt_link` | TF frame the OAK-D S2 is mounted to. Override when reusing `oakd.launch.py` to mount the camera elsewhere (e.g. directly on a host robot without the pan-tilt). Not forwarded by `pantilt.launch.py`. |
 | `use_sim_time`    | `pt_control`, `pt_bringup` | `false` | Use `/clock` from a simulator instead of system time |
-| `sim`              | `pt_bringup`                  | `false` | Run against MuJoCo instead of real hardware: forces `use_sim_time`/`use_mock`, and skips `oakd` (no simulated equivalent yet) |
-| `gui`              | `pt_bringup`                  | `true`  | [`sim` only] Launch with the MuJoCo Simulate viewer attached |
-| `mujoco_model`     | `pt_control`                  | `""`    | [`sim` only] Path to a pre-built MJCF file; empty means xacro-process `pt_description/mjcf/pantilt.mjcf.xacro` with `pantilt_config` at launch time instead (so `pantilt_config` alone picks the pt100/pt101 MJCF too) |
-| `mujoco_headless`  | `pt_control`                  | `false` | [`sim` only] Run without the MuJoCo Simulate viewer window (set automatically from `gui` when launched via `pt_bringup`) |
 
 > **Note:** All hardware parameters (serial port, baud rate, motor IDs, center steps, joint limits, etc.) are configured in [`pt_control/config/urdf_config.yaml`](pt_control/config/urdf_config.yaml). `sts_serial_port` and `use_mock` can be overridden at launch time; all other parameters must be changed in the yaml file directly.
 
@@ -190,10 +144,6 @@ pantilt_ros2/
 │   │   ├── pt101.urdf             # Pre-generated standalone URDF (pantilt_config=pt101, default, recommended)
 │   │   └── oakd_s2.module.xacro   # OAK-D S2 camera and IMU macro
 │   ├── meshes/                    # STL files for pan-tilt body and OAK-D S2
-│   ├── mjcf/                      # MuJoCo scene description (mujoco_ros2_control)
-│   │   ├── pantilt_shared.xml     # Compiler options, shared meshes/materials, default classes, actuators
-│   │   ├── oakd_s2_subtree.xml    # tilt_link + OAK-D S2 mount - fully shared between pt100/pt101
-│   │   └── pantilt.mjcf.xacro     # pantilt_body macro + pantilt_config-driven mesh/offset selection; standalone arg (default true) gates ground plane + lighting
 │   └── launch/
 │       └── urdf.launch.py         # Visualization-only launch file (robot_state_publisher)
 │
@@ -201,23 +151,14 @@ pantilt_ros2/
 │   ├── config/
 │   │   ├── urdf_config.yaml       # Hardware parameters (serial port, motor IDs, center steps, joint limits)
 │   │   ├── pantilt_config.yaml    # Controller manager, spawner types, joint limits
-│   │   ├── teleop_config.yaml     # joy_teleop axis/button mapping
-│   │   └── mujoco_ros2_control_plugins.yaml  # CameraPlugin config for oak_rgb - not currently loaded, see Simulation
+│   │   └── teleop_config.yaml     # joy_teleop axis/button mapping
 │   └── launch/
 │       ├── pantilt.launch.py      # Control stack (RSP, controller_manager, spawners, teleop)
 │       └── teleop.launch.py       # joy_teleop node in isolation
 │
-└── pt_bringup/                 # System-level launch files and camera config
-  ├── config/
-  │   ├── oakd_vio.yaml            # OAK-D S2: shared base - RGB + IMU + VIO + depth, no point cloud
-  │   ├── oakd_vio_pcl.yaml        # OAK-D S2: overlay on the base - RGBD point cloud + RGB-aligned depth
-  │   ├── depthimage_to_laserscan.yaml  # Slices a 2D LaserScan from the depth image (both modes)
-  │   └── octomap.yaml             # octomap_server params (pointcloud:=true + octomap:=true only)
-  ├── src/
-  │   └── pcl_compressor_node.cpp  # Cloudini PCL compression composable node (point cloud mode)
+└── pt_bringup/                 # Top-level system launch file
   └── launch/
-    ├── pantilt.launch.py          # Full PT100 system: includes pt_control + oakd
-    └── oakd.launch.py             # OAK-D S2 camera driver only
+    └── pantilt.launch.py          # Full PT100 system: includes pt_control
 ```
 
 ## Package Details
@@ -237,8 +178,6 @@ The URDF is split across several xacro files with distinct responsibilities:
 
 Both pan and tilt joints use `velocity="1e6"` in their URDF `<limit>` elements. See [Design](#design) for the reason.
 
-`mjcf/` holds the MuJoCo scene description (see [Simulation](#simulation)) - a separate, hand-authored set of files, not generated from the xacro above.
-
 #### Mesh variants (`pantilt_config`)
 
 This is the source of the project's naming convention: **PT100** is built with [SO-ARM100](https://github.com/TheRobotStudio/SO-ARM100) base/shoulder parts, and **PT101** is built with the equivalent [SO-ARM101](https://github.com/TheRobotStudio/SO-ARM101) parts. `pantilt.urdf.xacro` (and `pantilt.common.xacro`) accept a `pantilt_config` arg — `pt101` (default) or `pt100` — that selects the matching mesh set for `pantilt_base_link` and `pan_link`.
@@ -254,7 +193,7 @@ sed -i 's#package://pt_description/meshes/#../meshes/#g' pt100.urdf
 
 ### pt_control
 
-Starts whichever control-node process matches `ros2_control_hardware_type`: the standard `controller_manager`/`ros2_control_node` for `real`, or `mujoco_ros2_control`'s own `ros2_control_node` for `mujoco` (it hosts the MuJoCo simulation itself, so this package owns that dependency).
+Starts the standard `controller_manager`/`ros2_control_node` against the `sts_hardware_interface` plugin.
 
 Hardware parameters are read from [`config/urdf_config.yaml`](pt_control/config/urdf_config.yaml) at launch time. `sts_serial_port` and `use_mock` can be overridden on the command line (empty string = use yaml value); all other parameters (motor IDs, center steps, joint limits, etc.) must be edited in the yaml directly.
 
@@ -276,22 +215,7 @@ Joystick axes map directly to **absolute** joint positions, not velocities. The 
 
 ### pt_bringup
 
-`pt_bringup/pantilt.launch.py` composes `pt_control/pantilt.launch.py` with either `oakd.launch.py` (real hardware) or nothing further at all (`sim:=true` - `pt_control`'s own launch file already starts everything MuJoCo needs), forwarding the relevant arguments to each.
-
-`oakd.launch.py` launches the OAK-D S2 as a composable node container. `depth_to_scan` (`/oak/scan`) runs in both modes. A `PCLCompressorNode` (subscribes to `/oak/rgbd/points`, compresses using [cloudini](https://github.com/facontidavide/cloudini) at 1 mm resolution, publishes to `/oak/rgbd/points/compressed`) is only loaded when `pointcloud:=true` — the point cloud topic it depends on doesn't exist otherwise. The camera's TF parent is `tf_parent_frame` (default `tilt_link`), so this launch file can be reused as-is to bring up the OAK-D S2 on a host robot that doesn't have the pan-tilt, by overriding `tf_parent_frame` to the host's camera mount link.
-
-`oakd_vio.yaml` is the shared base config (RGB, IMU, VIO, stereo depth settings) - always loaded. `oakd_vio_pcl.yaml` is a small overlay layered on top of it in `oak`'s composable node parameters list when `pointcloud:=true`, rather than duplicating the base into a second full config file. It sets the two keys that actually differ (`i_enable_rgbd`, `i_aligned`) plus its own `cloudini_compressor` block; RGB resolution and decimation are also pinned there defensively (see below) even though they currently match the base.
-
-| Config file       | Pipeline                                                | Use case                        |
-|-------------------|----------------------------------------------------------|---------------------------------|
-| `oakd_vio.yaml`   | RGB 640x400 @ 30 Hz, IMU, depth 640x400 @ 30 Hz (full resolution, unaligned to RGB), VIO 60 Hz - no point cloud | Default — odometry and tracking |
-| `oakd_vio_pcl.yaml`| RGB 640x400 @ 30 Hz, depth 640x400 @ 30 Hz (full resolution, aligned to RGB), VIO 60 Hz, point cloud | 3D mapping (higher CPU load)    |
-
-`oakd_vio.yaml` publishes depth with `stereo.i_aligned: false` rather than the more common RGB-aligned depth — a `depthai_ros_driver` 3.1.0 bug crashes `oak_container` on the RGB-alignment code path when only the ROS publisher (not also a point cloud) consumes its output. Unaligned depth bypasses that code path entirely and is sufficient for `depth_to_scan`, which only needs a depth image + matching `camera_info`, not RGB alignment. A threshold filter (450-4000mm) clamps noisy readings. `oakd_vio_pcl.yaml` additionally pins RGB to 640x400 and decimation off as an explicit guard against a separate crash that only manifests in combination with `i_aligned: true` + `i_enable_rgbd: true` active together. `driver.i_enable_ir` is disabled in the base config since the OAK-D S2 (non-Pro) has no IR emitter hardware to drive.
-
-When `octomap:=true` (requires `pointcloud:=true`), `octomap_server` subscribes to `/oak/rgbd/points` and accumulates a persistent 3D occupancy octree, looking up the camera's TF pose (driven by the pan-tilt's live joint states) at each cloud's timestamp so points land at their correct 3D position as the pan-tilt sweeps through different angles over time.
-
-Set `DEPTHAI_DEBUG=1` in the environment before launching to enable debug-level logging from the camera driver.
+`pt_bringup/pantilt.launch.py` includes `pt_control/pantilt.launch.py` and forwards the relevant arguments to it. No camera driver is launched — the OAK-D S2 exists in this project only as URDF geometry (mesh, link, fixed joint; see [pt_description](#pt_description) and [TF Frames](#tf-frames)), not as a live sensor. A previous version of this package launched `depthai-ros` here; that driver, its VIO/point-cloud/octomap configs, and the `cloudini`-based point cloud compressor have all been removed.
 
 ## ROS Interfaces
 
@@ -303,13 +227,6 @@ Set `DEPTHAI_DEBUG=1` in the environment before launching to enable debug-level 
 | `/dynamic_joint_states`          | `control_msgs/DynamicJointState`        | Published  | Extended states: voltage, temperature, current, is_moving                        |
 | `/pantilt_controller/commands`   | `std_msgs/Float64MultiArray`            | Subscribed | Position commands `[pan_rad, tilt_rad]`                                          |
 | `/joy`                           | `sensor_msgs/Joy`                       | Subscribed | Joystick input (published by external `joy` node)                                |
-| `/oak/rgb/image_raw`             | `sensor_msgs/Image`                     | Published  | OAK-D S2 RGB stream                                                              |
-| `/oak/stereo/image_raw`          | `sensor_msgs/Image`                     | Published  | OAK-D S2 depth stream (aligned to RGB when `pointcloud:=true`, unaligned otherwise - see Package Details) |
-| `/oak/scan`                      | `sensor_msgs/LaserScan`                 | Published  | Laser scan sliced from the depth image                                          |
-| `/oak/imu/data`                  | `sensor_msgs/Imu`                       | Published  | OAK-D S2 IMU data                                                                |
-| `/oak/vio/transform`             | `geometry_msgs/TransformStamped`        | Published  | Visual-inertial odometry output                                                  |
-| `/oak/rgbd/points`               | `sensor_msgs/PointCloud2`               | Published  | Raw RGBD point cloud (only when `pointcloud:=true`)                              |
-| `/oak/rgbd/points/compressed`    | `point_cloud_interfaces/CompressedPointCloud2` | Published | Cloudini-compressed point cloud at 1 mm resolution (only when `pointcloud:=true`) |
 | `/base/diagnostics`              | `diagnostic_msgs/DiagnosticArray`       | Published  | Per-joint motor health: temperature, voltage, current (when `diagnostics:=true`) |
 
 ### Services
@@ -402,13 +319,7 @@ controller_manager:
 
 The URDF is split into `common` (geometry), `control` (ros2_control + motor parameters), `joints` (embeddable joint declarations), and `module` (links and joints) so the pan-tilt can be embedded into a host robot either with its own hardware block or as joints added to a shared bus - see [Embedding as a Module](#embedding-as-a-module) above. `pantilt.urdf.xacro` is a thin standalone wrapper around the `pantilt_module` macro.
 
-`ForwardCommandController` sends raw position targets directly to the hardware; the STS3215 firmware handles velocity profiling, not software. Both joints use `velocity="1e6"` in real mode (physically unreachable, so it never clips) since `joy_teleop`'s absolute position commands can jump enough in one cycle to otherwise trip spurious `ros2_control` limit errors. Position limits (±π/2) remain enforced; the real speed ceiling comes from `max_velocity` (85% of the STS3215 hardware max).
-
-## Simulation
-
-A small, lightly-tested part of this package - not run against real hardware for comparison. `ros2_control_hardware_type` swaps the `<hardware>` plugin between real (`sts_hardware_interface`), Gazebo, and MuJoCo. **Only MuJoCo is wired into the launch files** (`sim:=true`); Gazebo support exists at the xacro level only, with no launch-side plumbing to start it.
-
-MJCF is hand-authored under `pt_description/mjcf/` (MuJoCo doesn't support the full xacro/URDF feature set) and picks the pt100/pt101 mesh variant via the same `pantilt_config` arg as the URDF side. `mujoco_ros2_control` hosts the physics in-process, so `sim:=true` starts nothing beyond `pt_control`'s own launch file. The simulated OAK-D camera (`oak_rgb`, modeled in `oakd_s2_subtree.xml`) isn't wired up yet - the packaged `mujoco_ros2_control_plugins` doesn't ship `CameraPlugin`.
+`ForwardCommandController` sends raw position targets directly to the hardware; the STS3215 firmware handles velocity profiling, not software. Both joints use `velocity="1e6"` (physically unreachable, so it never clips) since `joy_teleop`'s absolute position commands can jump enough in one cycle to otherwise trip spurious `ros2_control` limit errors. Position limits (±π/2) remain enforced; the real speed ceiling comes from `max_velocity` (85% of the STS3215 hardware max).
 
 ## Notes and Troubleshooting
 
@@ -421,12 +332,6 @@ ros2 run joy joy_node
 Hold **L1** to enable motion. Without the deadman button held, `joy_teleop` does not publish commands.
 
 **No hardware available** — Use `use_mock:=true` to run the full control stack with simulated motor responses. All topics, TF frames, and controllers behave identically; motor feedback values are synthesised.
-
-**Camera driver debug logging** — Set `DEPTHAI_DEBUG=1` before launching to enable verbose output from `depthai_ros_driver`:
-
-```bash
-DEPTHAI_DEBUG=1 ros2 launch pt_bringup pantilt.launch.py
-```
 
 **Motor not reaching commanded position** — If a motor is mechanically obstructed or the center step calibration is wrong, the reported position will diverge from the command. Check `/dynamic_joint_states` for elevated `effort` or `current` values, which indicate the motor is stalled.
 

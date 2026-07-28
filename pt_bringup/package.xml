@@ -3,25 +3,14 @@
 <package format="3">
   <name>pt_bringup</name>
   <version>0.0.1</version>
-  <description>Bringup package for Pan Tilt 100, including camera and control launch files.</description>
+  <description>Bringup package for Pan Tilt 100, including control launch files.</description>
   <maintainer email="adityakamath@live.com">Aditya Kamath (Kamath Robotics)</maintainer>
   <license>Apache-2.0</license>
 
   <buildtool_depend>ament_cmake</buildtool_depend>
 
-  <!-- Build dependencies for PCL compressor composable node -->
-  <depend>rclcpp</depend>
-  <depend>rclcpp_components</depend>
-  <depend>sensor_msgs</depend>
-  <depend>point_cloud_interfaces</depend>
-  <depend>cloudini_lib</depend>
-  <depend>cloudini_ros</depend>
-
   <!-- Runtime dependencies for launch files -->
   <exec_depend>pt_control</exec_depend>
-  <exec_depend>depthai_ros_driver</exec_depend>
-  <exec_depend>depthimage_to_laserscan</exec_depend>
-  <exec_depend>octomap_server</exec_depend>
 
   <test_depend>ament_lint_auto</test_depend>
   <test_depend>ament_lint_common</test_depend>

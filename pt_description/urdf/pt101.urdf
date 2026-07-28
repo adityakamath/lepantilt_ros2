@@ -54,8 +54,9 @@
     </joint>
   </ros2_control>
   <!--
-	  Custom OAK-D-S2 camera macro, shared by both pt100/pt101.
-	  This version allows direct color parameterization (r/g/b/a) for the mesh material.
+	  OAK-D-S2 mount macro, shared by both pt100/pt101: mesh, link, and fixed joints only
+	  (TF/visual geometry) - no camera driver, sensor, or ROS interface. This version
+	  allows direct color parameterization (r/g/b/a) for the mesh material.
 	-->
   <!-- Standalone pantilt module instantiation -->
   <link name="base_footprint"/>
@@ -149,17 +150,16 @@
       </geometry>
     </collision>
   </link>
-  <!-- real mode: velocity="1e6" (unreachable) disables JointSaturationLimiter's clipping,
-         since joy_teleop's absolute position jumps would otherwise trip spurious limit
-         errors. gazebo mode: uses the real computed ceiling instead, since GazeboSimSystem
-         actually enforces this limit on the simulated joint. -->
+  <!-- velocity="1e6" (unreachable) disables JointSaturationLimiter's clipping, since
+         joy_teleop's absolute position jumps would otherwise trip spurious limit errors.
+         The real speed ceiling comes from max_velocity in the <ros2_control> block. -->
   <!-- Pan joint (revolute) -->
   <joint name="pan_joint" type="revolute">
     <parent link="pantilt_base_link"/>
     <child link="pan_link"/>
     <origin rpy="0 0 0" xyz="0.0452 0 0.0165"/>
     <axis xyz="0 0 1"/>
-    <limit effort="2.942" lower="-1.5708" upper="1.5708" velocity="1000000.0"/>
+    <limit effort="2.942" lower="-1.5708" upper="1.5708" velocity="1e6"/>
   </joint>
   <!-- Tilt joint (revolute) -->
   <joint name="tilt_joint" type="revolute">
@@ -167,7 +167,7 @@
     <child link="tilt_link"/>
     <origin rpy="-1.5707963267948966 1.5707963267948966 0" xyz="0.0306 0 0.1025"/>
     <axis xyz="0 0 -1"/>
-    <limit effort="2.942" lower="-1.5708" upper="1.5708" velocity="1000000.0"/>
+    <limit effort="2.942" lower="-1.5708" upper="1.5708" velocity="1e6"/>
   </joint>
   <!-- base_link of the sensor-->
   <link name="oak_link"/>
@@ -200,12 +200,4 @@
     <child link="oak_link_model_origin"/>
     <origin rpy="1.5707963267948966 0 1.5707963267948966" xyz="0 0 0"/>
   </joint>
-  <!-- Gazebo simulation: spawns controller_manager inside the gz_sim process, loading
-       $(arg simulation_controllers). Inert (ignored) outside Gazebo, so this is safe to
-       leave in place regardless of ros2_control_hardware_type. -->
-  <gazebo>
-    <plugin filename="gz_ros2_control-system" name="gz_ros2_control::GazeboSimROS2ControlPlugin">
-      <parameters></parameters>
-    </plugin>
-  </gazebo>
 </robot>
