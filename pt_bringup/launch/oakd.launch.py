@@ -13,6 +13,18 @@ from launch_ros.actions import ComposableNodeContainer
 from launch_ros.descriptions import ComposableNode, ParameterFile
 
 
+def _launch_arg_as_bool(context, name: str) -> bool:
+    """Resolve a launch argument as a strict boolean."""
+    value = LaunchConfiguration(name).perform(context).strip().lower()
+    if value in ("true", "1"):
+        return True
+    if value in ("false", "0"):
+        return False
+    raise RuntimeError(
+        f"[oakd.launch.py] Launch argument '{name}' must be true/false or 1/0, got {value!r}."
+    )
+
+
 def generate_launch_description():
     """Declare arguments and defer camera node setup to launch_setup via OpaqueFunction."""
     declared_arguments = [
@@ -48,8 +60,8 @@ def generate_launch_description():
         if context.environment.get("DEPTHAI_DEBUG") == "1":
             log_level = "debug"
 
-        pointcloud = LaunchConfiguration("pointcloud").perform(context) == "true"
-        octomap = LaunchConfiguration("octomap").perform(context) == "true"
+        pointcloud = _launch_arg_as_bool(context, "pointcloud")
+        octomap = _launch_arg_as_bool(context, "octomap")
         tf_parent_frame = LaunchConfiguration("tf_parent_frame").perform(context)
 
         config_dir = os.path.join(get_package_share_directory("pt_bringup"), "config")

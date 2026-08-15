@@ -16,10 +16,22 @@ from launch.substitutions import LaunchConfiguration, PathJoinSubstitution
 from launch_ros.substitutions import FindPackageShare
 
 
+def _launch_arg_as_bool(context, name: str) -> bool:
+    """Resolve a launch argument as a strict boolean."""
+    value = LaunchConfiguration(name).perform(context).strip().lower()
+    if value in ("true", "1"):
+        return True
+    if value in ("false", "0"):
+        return False
+    raise RuntimeError(
+        f"[pantilt.launch.py] Launch argument '{name}' must be true/false or 1/0, got {value!r}."
+    )
+
+
 def launch_setup(context):
     """Include pt_control's control stack, plus either oakd (real) or nothing more (sim - MuJoCo is self-contained)."""
     use_mock     = LaunchConfiguration("use_mock").perform(context)
-    sim          = LaunchConfiguration("sim").perform(context).strip().lower() in ("true", "1")
+    sim          = _launch_arg_as_bool(context, "sim")
     gui          = LaunchConfiguration("gui").perform(context)
     use_sim_time = LaunchConfiguration("use_sim_time").perform(context)
 
@@ -67,6 +79,8 @@ def launch_setup(context):
             ),
             launch_arguments={
                 "pointcloud": LaunchConfiguration("pointcloud"),
+                "octomap": LaunchConfiguration("octomap"),
+                "tf_parent_frame": LaunchConfiguration("tf_parent_frame"),
             }.items()
         )
         actions.append(oakd_launch)
@@ -92,7 +106,7 @@ def generate_launch_description():
         ),
         DeclareLaunchArgument(
             "diagnostics",
-            default_value="true",
+            default_value="false",
             description="Launch motor diagnostics node",
         ),
         DeclareLaunchArgument(
@@ -104,6 +118,17 @@ def generate_launch_description():
             "pointcloud",
             default_value="false",
             description="Enable RGBD point cloud pipeline.",
+        ),
+        DeclareLaunchArgument(
+            "octomap",
+            default_value="false",
+            description="Run octomap_server on the OAK-D point cloud. Requires pointcloud:=true "
+                        "(validated in oakd.launch.py, not here).",
+        ),
+        DeclareLaunchArgument(
+            "tf_parent_frame",
+            default_value="tilt_link",
+            description="TF frame the OAK-D S2 is mounted to; see oakd.launch.py.",
         ),
         DeclareLaunchArgument(
             "use_sim_time",

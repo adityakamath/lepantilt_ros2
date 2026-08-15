@@ -13,6 +13,9 @@ This launch file starts:
     - joystick teleop
 Hardware parameters are read from urdf_config.yaml; sts_serial_port and
 use_mock can be overridden on the command line (empty string = use yaml value).
+
+Dedicated-bus bring-up only; a shared-bus host (e.g. lekiwi_ros2) re-implements this
+sequence instead of including it - see README's "Launch-time bring-up on a shared bus".
 """
 
 import subprocess
@@ -29,13 +32,25 @@ from launch_ros.parameter_descriptions import ParameterValue
 from launch_ros.substitutions import FindPackageShare
 
 
+def _launch_arg_as_bool(context, name: str) -> bool:
+    """Resolve a launch argument as a strict boolean."""
+    value = LaunchConfiguration(name).perform(context).strip().lower()
+    if value in ('true', '1'):
+        return True
+    if value in ('false', '0'):
+        return False
+    raise RuntimeError(
+        f"[pantilt.launch.py] Launch argument '{name}' must be true/false or 1/0, got {value!r}."
+    )
+
+
 def launch_setup(context):
     """Build the PT100 control-stack nodes, reading urdf_config.yaml for xacro args."""
     serial_port    = LaunchConfiguration('sts_serial_port').perform(context)
     use_mock       = LaunchConfiguration('use_mock').perform(context)
-    diagnostics    = LaunchConfiguration('diagnostics').perform(context)
+    diagnostics    = _launch_arg_as_bool(context, 'diagnostics')
     pantilt_config = LaunchConfiguration('pantilt_config').perform(context)
-    use_sim_time   = LaunchConfiguration('use_sim_time').perform(context).lower() in ('true', '1')
+    use_sim_time   = _launch_arg_as_bool(context, 'use_sim_time')
     hw_type = LaunchConfiguration('ros2_control_hardware_type').perform(context)
     mujoco_model    = LaunchConfiguration('mujoco_model').perform(context)
     mujoco_headless = LaunchConfiguration('mujoco_headless').perform(context)
@@ -130,6 +145,7 @@ def launch_setup(context):
         ],
         remappings=[('/diagnostics', '/controller_manager/diagnostics')],
         output='both',
+        emulate_tty=True,
     )
 
     teleop_launch = IncludeLaunchDescription(
@@ -166,7 +182,7 @@ def launch_setup(context):
         teleop_launch,
     ]
 
-    if diagnostics.lower() == 'true':
+    if diagnostics:
         actions.append(TimerAction(period=3.0, actions=[motor_diagnostics]))
 
     return actions
@@ -187,7 +203,7 @@ def generate_launch_description():
         ),
         DeclareLaunchArgument(
             'diagnostics',
-            default_value='true',
+            default_value='false',
             description='Launch motor diagnostics node',
         ),
         DeclareLaunchArgument(
