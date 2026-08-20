@@ -10,7 +10,7 @@
   <xacro:arg name="tilt_motor_id"          default="2"/>
   <xacro:arg name="pan_center_steps"       default="2048"/>
   <xacro:arg name="tilt_center_steps"      default="2646"/>
-  <xacro:arg name="sts_max_velocity_steps" default="3400"/>   <!-- STS3215=3400, STS3032=2900, STS3235=3400 -->
+  <xacro:arg name="sts3215_max_vel_steps" default="3400"/>   <!-- STS3215=3400, STS3032=2900, STS3235=3400 -->
   <xacro:arg name="proportional_vel_max"   default="0"/>      <!-- [0-max_velocity_steps]; 0 = each joint uses commanded velocity -->
   <xacro:arg name="pan_joint_lower"        default="-1.5708"/>  <!-- rad, default -π/2 -->
   <xacro:arg name="pan_joint_upper"        default="1.5708"/>   <!-- rad, default +π/2 -->
@@ -34,10 +34,9 @@
   <xacro:arg name="mujoco_model" default=""/>
   <xacro:arg name="mujoco_headless" default="false"/>
 
-  <!-- Hardware velocity ceiling — defined before <ros2_control> because the hardware
-       plugin param references it directly. pantilt_joints receives the same value so
-       joint velocity limits stay consistent with what the interface is configured to enforce. -->
-  <xacro:property name="sts_max_velocity_steps" value="$(arg sts_max_velocity_steps)"/>
+  <!-- Motor-specific, model-dependent velocity ceiling — defined before <ros2_control>
+       because pantilt_joints (called below) writes it per joint as max_velocity_steps. -->
+  <xacro:property name="sts3215_max_vel_steps" value="$(arg sts3215_max_vel_steps)"/>
 
   <!-- Torque/velocity limits and joint limits as top-level properties — required by
        pantilt.module.xacro for the URDF <limit> elements on the revolute joints.
@@ -48,7 +47,7 @@
        datasheet for that voltage option (not the 7.4V/19.5 kgf*cm variant used by stock
        SO-ARM100/101). -->
   <xacro:property name="max_torque_nm"    value="2.942"/>  <!-- N⋅m (30 kgf⋅cm @ 12V) -->
-  <xacro:property name="pantilt_max_velocity_steps" value="${int(sts_max_velocity_steps * 0.85)}"/>
+  <xacro:property name="pantilt_max_velocity_steps" value="${int(sts3215_max_vel_steps * 0.85)}"/>
   <xacro:property name="pantilt_max_velocity_rads"  value="${pantilt_max_velocity_steps * 2 * pi / 4096}"/>
   <xacro:property name="pan_joint_lower"  value="$(arg pan_joint_lower)"/>
   <xacro:property name="pan_joint_upper"  value="$(arg pan_joint_upper)"/>
@@ -75,7 +74,6 @@
         <param name="communication_timeout_ms">100</param>
         <param name="use_sync_write">$(arg use_sync_write)</param>
         <param name="enable_mock_mode">$(arg use_mock)</param>
-        <param name="max_velocity_steps">${sts_max_velocity_steps}</param>
         <param name="proportional_vel_max">$(arg proportional_vel_max)</param>
         <param name="reset_states_on_activate">true</param>
       </xacro:if>
@@ -86,7 +84,7 @@
         tilt_motor_id="$(arg tilt_motor_id)"
         pan_center_steps="$(arg pan_center_steps)"
         tilt_center_steps="$(arg tilt_center_steps)"
-        sts_max_velocity_steps="${sts_max_velocity_steps}"
+        sts3215_max_vel_steps="${sts3215_max_vel_steps}"
         pan_joint_lower="${pan_joint_lower}"
         pan_joint_upper="${pan_joint_upper}"
         tilt_joint_lower="${tilt_joint_lower}"

@@ -362,7 +362,7 @@ If all motors (host + pan-tilt) share one serial bus and a single `<ros2_control
       tilt_motor_id="2"
       pan_center_steps="2048"
       tilt_center_steps="2646"
-      sts_max_velocity_steps="${sts_max_velocity_steps}"
+      sts3215_max_vel_steps="${sts3215_max_vel_steps}"
       pan_joint_lower="${pan_joint_lower}"
       pan_joint_upper="${pan_joint_upper}"
       tilt_joint_lower="${tilt_joint_lower}"

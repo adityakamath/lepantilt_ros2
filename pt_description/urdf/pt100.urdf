@@ -14,7 +14,6 @@
       <param name="communication_timeout_ms">100</param>
       <param name="use_sync_write">true</param>
       <param name="enable_mock_mode">false</param>
-      <param name="max_velocity_steps">3400</param>
       <param name="proportional_vel_max">0</param>
       <param name="reset_states_on_activate">true</param>
     </hardware>
@@ -24,6 +23,8 @@
       <param name="operating_mode">0</param>
       <param name="min_position">-1.5708</param>
       <param name="max_position">1.5708</param>
+      <!-- Motor-specific, model-dependent parameter (per joint so different STS models can share this bus) -->
+      <param name="max_velocity_steps">3400</param>
       <param name="max_velocity">4.433204476989503</param>
       <param name="position_center_steps">2048</param>
       <command_interface name="position"/>
@@ -41,6 +42,8 @@
       <param name="operating_mode">0</param>
       <param name="min_position">-1.5708</param>
       <param name="max_position">1.5708</param>
+      <!-- Motor-specific, model-dependent parameter (per joint so different STS models can share this bus) -->
+      <param name="max_velocity_steps">3400</param>
       <param name="max_velocity">4.433204476989503</param>
       <param name="position_center_steps">2646</param>
       <command_interface name="position"/>
