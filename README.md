@@ -38,13 +38,13 @@ Each motor has a **center position** (in raw steps, 0–4095) that maps to 0 rad
 | Joint | Parameter           | Default |
 |-------|---------------------|---------|
 | Pan   | `pan_center_steps`  | `2048`  |
-| Tilt  | `tilt_center_steps` | `2646`  |
+| Tilt  | `tilt_center_steps` | `2048`  |
 
 Update these permanently in [`pt_control/config/urdf_config.yaml`](pt_control/config/urdf_config.yaml):
 
 ```yaml
 pan_center_steps: 2048
-tilt_center_steps: 2646
+tilt_center_steps: 2048
 ```
 
 ## Dependencies
@@ -361,7 +361,7 @@ If all motors (host + pan-tilt) share one serial bus and a single `<ros2_control
       pan_motor_id="1"
       tilt_motor_id="2"
       pan_center_steps="2048"
-      tilt_center_steps="2646"
+      tilt_center_steps="2048"
       sts3215_max_vel_steps="${sts3215_max_vel_steps}"
       pan_joint_lower="${pan_joint_lower}"
       pan_joint_upper="${pan_joint_upper}"
