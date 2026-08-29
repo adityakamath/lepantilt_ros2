@@ -6,16 +6,17 @@
   <xacro:arg name="baud_rate"              default="1000000"/>
   <xacro:arg name="use_mock"               default="false"/>
   <xacro:arg name="use_sync_write"         default="true"/>
-  <xacro:arg name="pan_motor_id"           default="1"/>
-  <xacro:arg name="tilt_motor_id"          default="2"/>
-  <xacro:arg name="pan_center_steps"       default="2048"/>
-  <xacro:arg name="tilt_center_steps"      default="2646"/>
   <xacro:arg name="sts3215_max_vel_steps" default="3400"/>   <!-- STS3215=3400, STS3032=2900, STS3235=3400 -->
   <xacro:arg name="proportional_vel_max"   default="0"/>      <!-- [0-max_velocity_steps]; 0 = each joint uses commanded velocity -->
-  <xacro:arg name="pan_joint_lower"        default="-1.5708"/>  <!-- rad, default -π/2 -->
-  <xacro:arg name="pan_joint_upper"        default="1.5708"/>   <!-- rad, default +π/2 -->
-  <xacro:arg name="tilt_joint_lower"       default="-1.5708"/>  <!-- rad, default -π/2 -->
-  <xacro:arg name="tilt_joint_upper"       default="1.5708"/>   <!-- rad, default +π/2 -->
+  <!-- Motor IDs, step-centering, and joint limits are NOT xacro:args here - they're
+       physical-calibration constants for this mechanism (motor wiring, servo centering),
+       not per-deployment connection settings, so pantilt.joints.xacro's macro defaults are
+       their single source of truth (same convention as so101.control.xacro/so100.control.xacro
+       in so_arm_ros2, which hardcode motor IDs/joint limits as fixed xacro:property values
+       rather than sourcing them from an external launch-time YAML). A host embedding this
+       mechanism on a shared bus (e.g. lekiwi_ros2's base_pantilt.control.xacro) can still
+       override any of pantilt_joints' macro params explicitly if it ever needs different
+       values - see pantilt.joints.xacro. -->
 
   <!-- Simulation -->
   <!-- "real" (default) keeps the STS3215 serial hardware plugin below unchanged.
@@ -38,8 +39,8 @@
        because pantilt_joints (called below) writes it per joint as max_velocity_steps. -->
   <xacro:property name="sts3215_max_vel_steps" value="$(arg sts3215_max_vel_steps)"/>
 
-  <!-- Torque/velocity limits and joint limits as top-level properties — required by
-       pantilt.module.xacro for the URDF <limit> elements on the revolute joints.
+  <!-- Torque limit as a top-level property — required by pantilt.module.xacro for the URDF
+       <limit> elements on the revolute joints.
        pantilt_max_velocity_rads duplicates pantilt_joints' own local computation
        (pantilt.joints.xacro) - only used by module.xacro's gazebo-mode <limit velocity>,
        real mode keeps velocity="1e6" (see module.xacro's comment on why) regardless. -->
@@ -49,10 +50,6 @@
   <xacro:property name="max_torque_nm"    value="2.942"/>  <!-- N⋅m (30 kgf⋅cm @ 12V) -->
   <xacro:property name="pantilt_max_velocity_steps" value="${int(sts3215_max_vel_steps * 0.85)}"/>
   <xacro:property name="pantilt_max_velocity_rads"  value="${pantilt_max_velocity_steps * 2 * pi / 4096}"/>
-  <xacro:property name="pan_joint_lower"  value="$(arg pan_joint_lower)"/>
-  <xacro:property name="pan_joint_upper"  value="$(arg pan_joint_upper)"/>
-  <xacro:property name="tilt_joint_lower" value="$(arg tilt_joint_lower)"/>
-  <xacro:property name="tilt_joint_upper" value="$(arg tilt_joint_upper)"/>
 
   <xacro:include filename="$(find pt_description)/urdf/pantilt.joints.xacro"/>
 
@@ -80,15 +77,7 @@
     </hardware>
 
     <xacro:pantilt_joints
-        pan_motor_id="$(arg pan_motor_id)"
-        tilt_motor_id="$(arg tilt_motor_id)"
-        pan_center_steps="$(arg pan_center_steps)"
-        tilt_center_steps="$(arg tilt_center_steps)"
         sts3215_max_vel_steps="${sts3215_max_vel_steps}"
-        pan_joint_lower="${pan_joint_lower}"
-        pan_joint_upper="${pan_joint_upper}"
-        tilt_joint_lower="${tilt_joint_lower}"
-        tilt_joint_upper="${tilt_joint_upper}"
         ros2_control_hardware_type="$(arg ros2_control_hardware_type)"/>
   </ros2_control>
 

@@ -88,16 +88,8 @@ def launch_setup(context):
         f' baud_rate:={_cfg["baud_rate"]}'
         f' use_sync_write:={str(_cfg["use_sync_write"]).lower()}'
         f' pantilt_config:={pantilt_config}'
-        f' pan_motor_id:={_cfg["pan_motor_id"]}'
-        f' tilt_motor_id:={_cfg["tilt_motor_id"]}'
-        f' pan_center_steps:={_cfg["pan_center_steps"]}'
-        f' tilt_center_steps:={_cfg["tilt_center_steps"]}'
         f' sts3215_max_vel_steps:={_cfg["sts3215_max_vel_steps"]}'
         f' proportional_vel_max:={_cfg["proportional_vel_max"]}'
-        f' pan_joint_lower:={_cfg["pan_joint_lower"]}'
-        f' pan_joint_upper:={_cfg["pan_joint_upper"]}'
-        f' tilt_joint_lower:={_cfg["tilt_joint_lower"]}'
-        f' tilt_joint_upper:={_cfg["tilt_joint_upper"]}'
     )
     if hw_type == 'mujoco':
         xacro_cmd += (
@@ -171,12 +163,12 @@ def launch_setup(context):
         *control_node_actions,
         TimerAction(period=2.0, actions=[Node(
             package='controller_manager', executable='spawner',
-            arguments=['joint_state_broadcaster', '-c', '/controller_manager',
+            arguments=['joint_state_broadcaster', '-c', 'controller_manager',
                        '--controller-manager-timeout', '30'], output='both',
         )]),
         TimerAction(period=2.5, actions=[Node(
             package='controller_manager', executable='spawner',
-            arguments=['pantilt_controller', '-c', '/controller_manager',
+            arguments=['pantilt_controller', '-c', 'controller_manager',
                        '--controller-manager-timeout', '30'], output='both',
         )]),
         teleop_launch,

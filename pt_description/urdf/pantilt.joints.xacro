@@ -10,21 +10,21 @@
     block with the STSHardwareInterface plugin.
 
     Params:
-      pan_motor_id          — STS3215 motor ID for pan axis
+      shoulder_pan_motor_id — STS3215 motor ID for pan axis
       tilt_motor_id         — STS3215 motor ID for tilt axis
-      pan_center_steps      — raw step value (0–4095) for pan centre position
+      shoulder_pan_center_steps — raw step value (0–4095) for pan centre position
       tilt_center_steps     — raw step value (0–4095) for tilt centre position
       sts3215_max_vel_steps — motor's max velocity in steps/s, model-dependent;
                                written per joint as max_velocity_steps
   -->
   <xacro:macro name="pantilt_joints" params="
-      pan_motor_id:=1
+      shoulder_pan_motor_id:=1
       tilt_motor_id:=2
-      pan_center_steps:=2048
-      tilt_center_steps:=2646
+      shoulder_pan_center_steps:=2048
+      tilt_center_steps:=2048
       sts3215_max_vel_steps:=3400
-      pan_joint_lower:=-1.5708
-      pan_joint_upper:=1.5708
+      shoulder_pan_lower:=-1.5708
+      shoulder_pan_upper:=1.5708
       tilt_joint_lower:=-1.5708
       tilt_joint_upper:=1.5708
       ros2_control_hardware_type:=real">
@@ -33,16 +33,16 @@
     <xacro:property name="pantilt_max_velocity_steps" value="${int(sts3215_max_vel_steps * 0.85)}"/>
     <xacro:property name="pantilt_max_velocity_rads"  value="${pantilt_max_velocity_steps * 2 * pi / 4096}"/>
 
-    <!-- Pan axis: rotates the payload around Z -->
-    <joint name="pan_joint">
-      <param name="motor_id">${pan_motor_id}</param>
+    <!-- Shoulder-pan axis: rotates the payload around Z -->
+    <joint name="shoulder_pan_joint">
+      <param name="motor_id">${shoulder_pan_motor_id}</param>
       <param name="operating_mode">0</param>
-      <param name="min_position">${pan_joint_lower}</param>
-      <param name="max_position">${pan_joint_upper}</param>
+      <param name="min_position">${shoulder_pan_lower}</param>
+      <param name="max_position">${shoulder_pan_upper}</param>
       <!-- Motor-specific, model-dependent parameter (per joint so different STS models can share this bus) -->
       <param name="max_velocity_steps">${sts3215_max_vel_steps}</param>
       <param name="max_velocity">${pantilt_max_velocity_rads}</param>
-      <param name="position_center_steps">${pan_center_steps}</param>
+      <param name="position_center_steps">${shoulder_pan_center_steps}</param>
       <command_interface name="position"/>
       <state_interface name="position"/>
       <state_interface name="velocity"/>

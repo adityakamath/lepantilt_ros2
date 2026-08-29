@@ -35,17 +35,23 @@ Both motors are chained together on a single serial bus at 1 Mbaud, connected to
 
 Each motor has a **center position** (in raw steps, 0–4095) that maps to 0 rad in the URDF. The defaults below match my reference hardware build; recalibration is needed since each physical assembly will differ.
 
-| Joint | Parameter           | Default |
-|-------|---------------------|---------|
-| Pan   | `pan_center_steps`  | `2048`  |
-| Tilt  | `tilt_center_steps` | `2048`  |
+| Joint | Parameter                     | Default |
+|-------|--------------------------------|---------|
+| Pan   | `shoulder_pan_center_steps`   | `2048`  |
+| Tilt  | `tilt_center_steps`           | `2048`  |
 
-Update these permanently in [`pt_control/config/urdf_config.yaml`](pt_control/config/urdf_config.yaml):
+Motor IDs, step-centering, and joint limits are physical-calibration constants for this mechanism, not per-deployment settings — they're baked directly into [`pt_description/urdf/pantilt.joints.xacro`](pt_description/urdf/pantilt.joints.xacro)'s macro defaults (single source of truth, the same convention `so_arm_ros2` uses for its own motor IDs/joint limits). Recalibrate by editing that file's macro parameter defaults directly:
 
-```yaml
-pan_center_steps: 2048
-tilt_center_steps: 2048
+```xml
+<xacro:macro name="pantilt_joints" params="
+    shoulder_pan_motor_id:=1
+    tilt_motor_id:=2
+    shoulder_pan_center_steps:=2048
+    tilt_center_steps:=2048
+    ...">
 ```
+
+A host embedding this mechanism on a shared bus (e.g. `lekiwi_ros2`) can still override any of these explicitly on its own `<xacro:pantilt_joints .../>` call if that specific unit is ever calibrated differently from these defaults.
 
 ## Dependencies
 
@@ -241,7 +247,7 @@ Both pan and tilt joints use `velocity="1e6"` in their URDF `<limit>` elements. 
 
 #### Mesh variants (`pantilt_config`)
 
-This is the source of the project's naming convention: **PT100** is built with [SO-ARM100](https://github.com/TheRobotStudio/SO-ARM100) base/shoulder parts, and **PT101** is built with the equivalent [SO-ARM101](https://github.com/TheRobotStudio/SO-ARM101) parts. `pantilt.urdf.xacro` (and `pantilt.common.xacro`) accept a `pantilt_config` arg — `pt101` (default) or `pt100` — that selects the matching mesh set for `pantilt_base_link` and `pan_link`.
+This is the source of the project's naming convention: **PT100** is built with [SO-ARM100](https://github.com/TheRobotStudio/SO-ARM100) base/shoulder parts, and **PT101** is built with the equivalent [SO-ARM101](https://github.com/TheRobotStudio/SO-ARM101) parts. `pantilt.urdf.xacro` (and `pantilt.common.xacro`) accept a `pantilt_config` arg — `pt101` (default) or `pt100` — that selects the matching mesh set for `pantilt_base_link` and `shoulder_link`.
 
 > **PT101 is the recommended configuration and is set as the default** for `pantilt_config` across this project's launch files.
 
@@ -323,7 +329,7 @@ Set `DEPTHAI_DEBUG=1` in the environment before launching to enable debug-level 
 ```text
 base_footprint                             ← standalone root (pantilt.urdf.xacro only)
 └── pantilt_base_link                      ← physical mount base (pantilt_mount_joint when embedded)
-    └── pan_link                           ← rotates about Z (pan_joint, ±90°)
+    └── shoulder_link                      ← rotates about Z (shoulder_pan_joint, ±90°)
         └── tilt_link                      ← rotates about Z in reoriented frame (tilt_joint, ±90°)
             └── oak_link                   ← OAK-D S2 optical centre
                 ├── oak_link_model_origin  ← mesh visual origin
@@ -357,18 +363,11 @@ If all motors (host + pan-tilt) share one serial bus and a single `<ros2_control
 <ros2_control name="host_control" type="system">
   <hardware>...</hardware>
   <!-- host joints here -->
-  <xacro:pantilt_joints
-      pan_motor_id="1"
-      tilt_motor_id="2"
-      pan_center_steps="2048"
-      tilt_center_steps="2048"
-      sts3215_max_vel_steps="${sts3215_max_vel_steps}"
-      pan_joint_lower="${pan_joint_lower}"
-      pan_joint_upper="${pan_joint_upper}"
-      tilt_joint_lower="${tilt_joint_lower}"
-      tilt_joint_upper="${tilt_joint_upper}"/>
+  <xacro:pantilt_joints sts3215_max_vel_steps="${sts3215_max_vel_steps}"/>
 </ros2_control>
 ```
+
+Motor IDs, step-centering, and joint limits aren't passed here — `pantilt_joints`' own macro defaults are their single source of truth (see [Motor Calibration](#motor-calibration)). Override any of them explicitly on this call only if this specific unit is calibrated differently.
 
 Then include `pantilt.module.xacro` separately for the visual model:
 
@@ -386,7 +385,7 @@ In the host robot's controller config, add the pantilt joint limits under `contr
 controller_manager:
   ros__parameters:
     joint_limits:
-      pan_joint:
+      shoulder_pan_joint:
         has_position_limits: true
         min_position: -1.5708
         max_position: 1.5708
@@ -412,7 +411,7 @@ The URDF is split into `common` (geometry), `control` (ros2_control + motor para
 
 ## Simulation
 
-Not run against real hardware for comparison, but pan-tilt motion control itself is verified working end-to-end: a commanded position on `/pantilt_controller/commands` drives the simulated physics, `/joint_states` converges to it, and `pan_link`/`tilt_link` TF updates accordingly. `ros2_control_hardware_type` swaps the `<hardware>` plugin between real (`sts_hardware_interface`), Gazebo, and MuJoCo. **Only MuJoCo is wired into the launch files** (`sim:=true`); Gazebo support exists at the xacro level only, with no launch-side plumbing to start it.
+Not run against real hardware for comparison, but pan-tilt motion control itself is verified working end-to-end: a commanded position on `/pantilt_controller/commands` drives the simulated physics, `/joint_states` converges to it, and `shoulder_link`/`tilt_link` TF updates accordingly. `ros2_control_hardware_type` swaps the `<hardware>` plugin between real (`sts_hardware_interface`), Gazebo, and MuJoCo. **Only MuJoCo is wired into the launch files** (`sim:=true`); Gazebo support exists at the xacro level only, with no launch-side plumbing to start it.
 
 MJCF is hand-authored under `pt_description/mjcf/` (MuJoCo doesn't support the full xacro/URDF feature set) and picks the pt100/pt101 mesh variant via the same `pantilt_config` arg as the URDF side. `mujoco_ros2_control` hosts the physics in-process, so `sim:=true` starts nothing beyond `pt_control`'s own launch file.
 

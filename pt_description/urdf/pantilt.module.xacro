@@ -50,31 +50,31 @@
       </collision>
     </link>
 
-    <!-- Pan link -->
-    <link name="pan_link">
+    <!-- Shoulder link (was "pan_link") -->
+    <link name="shoulder_link">
       <inertial>
         <mass value="0.119226"/>
-        <origin xyz="-9.07886e-05 0.0590972 0.031089" rpy="0 0 0"/>
+        <origin xyz="-9.07886e-05 0.0590972 -0.0172669" rpy="0 0 0"/>
         <inertia ixx="5.94278e-05" ixy="0" ixz="0" iyy="5.89975e-05" iyz="0" izz="3.13712e-05"/>
       </inertial>
       <visual>
-        <origin xyz="${pan_joint_mesh_xyz}" rpy="${pan_joint_mesh_rpy}"/>
+        <origin xyz="${shoulder_pan_mesh_xyz}" rpy="${shoulder_pan_mesh_rpy}"/>
         <geometry>
-          <mesh filename="package://pt_description/meshes/${pan_joint_mesh}"/>
+          <mesh filename="package://pt_description/meshes/${shoulder_pan_mesh}"/>
         </geometry>
         <material name="light_grey"/>
       </visual>
       <visual>
-        <origin xyz="0 0 0" rpy="${pan_offset_rx} 0 ${pan_offset_rz}"/>
+        <origin xyz="0 0 -0.0483559" rpy="${shoulder_offset_rx} 0 ${shoulder_offset_rz}"/>
         <geometry>
           <mesh filename="package://pt_description/meshes/tilt_motor.stl"/>
         </geometry>
         <material name="charcoal"/>
       </visual>
       <collision>
-        <origin xyz="${pan_joint_mesh_xyz}" rpy="${pan_joint_mesh_rpy}"/>
+        <origin xyz="${shoulder_pan_mesh_xyz}" rpy="${shoulder_pan_mesh_rpy}"/>
         <geometry>
-          <mesh filename="package://pt_description/meshes/${pan_joint_mesh}"/>
+          <mesh filename="package://pt_description/meshes/${shoulder_pan_mesh}"/>
         </geometry>
       </collision>
     </link>
@@ -106,18 +106,18 @@
          errors. gazebo mode: uses the real computed ceiling instead, since GazeboSimSystem
          actually enforces this limit on the simulated joint. -->
 
-    <!-- Pan joint (revolute) -->
-    <joint name="pan_joint" type="revolute">
+    <!-- Shoulder-pan joint (revolute; was "pan_joint") -->
+    <joint name="shoulder_pan_joint" type="revolute">
       <parent link="pantilt_base_link"/>
-      <child link="pan_link"/>
-      <origin xyz="${pan_joint_x} 0 ${pan_joint_z}" rpy="0 0 0"/>
+      <child link="shoulder_link"/>
+      <origin xyz="${shoulder_pan_x} 0 ${shoulder_pan_z}" rpy="0 0 0"/>
       <axis xyz="0 0 1"/>
-      <limit lower="${pan_joint_lower}" upper="${pan_joint_upper}" effort="${max_torque_nm}" velocity="${1e6 if '$(arg ros2_control_hardware_type)' == 'real' else pantilt_max_velocity_rads}"/>
+      <limit lower="${shoulder_pan_lower}" upper="${shoulder_pan_upper}" effort="${max_torque_nm}" velocity="${1e6 if '$(arg ros2_control_hardware_type)' == 'real' else pantilt_max_velocity_rads}"/>
     </joint>
 
     <!-- Tilt joint (revolute) -->
     <joint name="tilt_joint" type="revolute">
-      <parent link="pan_link"/>
+      <parent link="shoulder_link"/>
       <child link="tilt_link"/>
       <origin xyz="${tilt_joint_x} 0 ${tilt_joint_z}" rpy="${tilt_joint_rx} ${tilt_joint_ry} 0"/>
       <axis xyz="0 0 -1"/>

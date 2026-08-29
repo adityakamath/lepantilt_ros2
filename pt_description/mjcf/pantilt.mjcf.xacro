@@ -28,25 +28,29 @@
        axis; every offset below has 2+ nonzero axes, so each is given as a quat computed
        directly from the URDF's rpy (via its own Rz*Ry*Rx convention), not a ported euler. -->
   <xacro:property name="pantilt_base_mesh" value="pantilt_base_100.stl"/>
-  <xacro:property name="pan_link_mesh_file" value="pan_joint_100.stl"/>
+  <xacro:property name="shoulder_link_mesh_file" value="pan_joint_100.stl"/>
   <xacro:property name="pantilt_base_geom_pos" value="0 0 0"/>
   <!-- pt100's pantilt_base_100.stl URDF origin is rpy="0 0 pi/2" (single Z axis, unlike
        pt101's) - quat is Rz(90) alone, not pt101's override value below. -->
   <xacro:property name="pantilt_base_geom_quat" value="0.70710678 0 0 0.70710678"/>
-  <xacro:property name="pan_link_geom_pos" value="0 0 0"/>
-  <xacro:property name="pan_link_geom_quat" value="0.5 0.5 0.5 0.5"/>
+  <!-- shoulder_link_geom_pos Z carries the same -0.0483559 reslice compensation as
+       pantilt.common.xacro's shoulder_pan_mesh_xyz (URDF side) - see that file's comment
+       for the derivation. Applies to both configs; only X differs (pt101's bracket mesh
+       has a nonzero local X offset, pt100's doesn't). -->
+  <xacro:property name="shoulder_link_geom_pos" value="0 0 -0.0483559"/>
+  <xacro:property name="shoulder_link_geom_quat" value="0.5 0.5 0.5 0.5"/>
   <xacro:if value="${pantilt_config == 'pt101'}">
     <xacro:property name="pantilt_base_mesh" value="pantilt_base_101.stl"/>
-    <xacro:property name="pan_link_mesh_file" value="pan_joint_101.stl"/>
+    <xacro:property name="shoulder_link_mesh_file" value="pan_joint_101.stl"/>
     <xacro:property name="pantilt_base_geom_pos" value="0 0 0.0002"/>
     <xacro:property name="pantilt_base_geom_quat" value="0.5 0.5 0.5 0.5"/>
-    <xacro:property name="pan_link_geom_pos" value="-0.0120 0 0.00205"/>
-    <xacro:property name="pan_link_geom_quat" value="0.0 0.0 0.70710678 0.70710678"/>
+    <xacro:property name="shoulder_link_geom_pos" value="-0.0120 0 -0.0463059"/>
+    <xacro:property name="shoulder_link_geom_quat" value="0.0 0.0 0.70710678 0.70710678"/>
   </xacro:if>
 
   <asset>
     <mesh name="pantilt_base_link_mesh" file="$(find pt_description)/meshes/${pantilt_base_mesh}"/>
-    <mesh name="pan_link_mesh" file="$(find pt_description)/meshes/${pan_link_mesh_file}"/>
+    <mesh name="shoulder_link_mesh" file="$(find pt_description)/meshes/${shoulder_link_mesh_file}"/>
   </asset>
 
   <!-- pantilt_base_link has no pos/euler of its own - it inherits the invocation site's
@@ -66,16 +70,19 @@
       <geom mesh="pantilt_base_link_mesh" class="collision"
             pos="${pantilt_base_geom_pos}" quat="${pantilt_base_geom_quat}"/>
 
-      <body name="pan_link" pos="0.0452 0 0.0165">
-        <inertial pos="-9.07886e-05 0.0590972 0.031089" mass="0.119226"
+      <!-- pos Z = 0.0648559 (was 0.0165): same reslice as pantilt.common.xacro's
+           shoulder_pan_z (URDF side) - the joint origin moved along its own rotation axis,
+           compensated by the mesh offsets above/below so nothing renders differently. -->
+      <body name="shoulder_link" pos="0.0452 0 0.0648559">
+        <inertial pos="-9.07886e-05 0.0590972 -0.0172669" mass="0.119226"
                   diaginertia="5.94278e-05 5.89975e-05 3.13712e-05"/>
-        <joint name="pan_joint" class="pan"/>
-        <geom mesh="pan_link_mesh" material="light_grey" class="visual"
-              pos="${pan_link_geom_pos}" quat="${pan_link_geom_quat}"/>
+        <joint name="shoulder_pan_joint" class="pan"/>
+        <geom mesh="shoulder_link_mesh" material="light_grey" class="visual"
+              pos="${shoulder_link_geom_pos}" quat="${shoulder_link_geom_quat}"/>
         <geom mesh="tilt_motor" material="charcoal" class="visual"
-              pos="0 0 0" quat="0.5 0.5 0.5 0.5"/>
-        <geom mesh="pan_link_mesh" class="collision"
-              pos="${pan_link_geom_pos}" quat="${pan_link_geom_quat}"/>
+              pos="0 0 -0.0483559" quat="0.5 0.5 0.5 0.5"/>
+        <geom mesh="shoulder_link_mesh" class="collision"
+              pos="${shoulder_link_geom_pos}" quat="${shoulder_link_geom_quat}"/>
 
         <include file="$(find pt_description)/mjcf/oakd_s2_subtree.xml"/>
       </body>

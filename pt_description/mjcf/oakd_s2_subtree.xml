@@ -1,7 +1,7 @@
 <!--
-  tilt_link and its OAK-D S2 mount, as an includable fragment spliced inside pan_link's
+  tilt_link and its OAK-D S2 mount, as an includable fragment spliced inside shoulder_link's
   <body> by pantilt.mjcf.xacro. Fully shared between pt100/pt101 (only pantilt_base_link's
-  and pan_link's own meshes differ - see pantilt.common.xacro).
+  and shoulder_link's own meshes differ - see pantilt.common.xacro).
 
   oak_link/oak_link_model_origin are welded (no <joint>) rigid sub-bodies, mirroring the two
   nested fixed joints oakd_s2.module.xacro's URDF macro creates.

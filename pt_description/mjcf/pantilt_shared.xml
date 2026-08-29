@@ -18,7 +18,7 @@
     <material name="charcoal" rgba="0.15 0.15 0.15 1.0"/>
     <material name="transparent" rgba="1 0 0 0.3"/>
 
-    <!-- Shared across pt100/pt101 - only pantilt_base_link's and pan_link's own body
+    <!-- Shared across pt100/pt101 - only pantilt_base_link's and shoulder_link's own body
          meshes differ between variants (declared in pantilt.mjcf.xacro). -->
     <mesh name="pan_motor" file="$(find pt_description)/meshes/pan_motor.stl"/>
     <mesh name="tilt_motor" file="$(find pt_description)/meshes/tilt_motor.stl"/>
@@ -53,7 +53,7 @@
   </default>
 
   <actuator>
-    <position class="pan" name="pan_joint" joint="pan_joint" inheritrange="1"/>
+    <position class="pan" name="shoulder_pan_joint" joint="shoulder_pan_joint" inheritrange="1"/>
     <position class="tilt" name="tilt_joint" joint="tilt_joint" inheritrange="1"/>
   </actuator>
 
@@ -61,7 +61,7 @@
        without this, MuJoCo applies a large corrective force from step 0. -->
 
   <contact>
-    <exclude body1="pantilt_base_link" body2="pan_link"/>
-    <exclude body1="pan_link" body2="tilt_link"/>
+    <exclude body1="pantilt_base_link" body2="shoulder_link"/>
+    <exclude body1="shoulder_link" body2="tilt_link"/>
   </contact>
 </mujoco>

@@ -4,16 +4,11 @@ baud_rate: 1000000
 use_mock: false
 use_sync_write: true
 
-pan_motor_id: 1
-tilt_motor_id: 2
-
-pan_center_steps: 2048
-tilt_center_steps: 2048
-
 sts3215_max_vel_steps: 3400
 proportional_vel_max: 0
 
-pan_joint_lower: -1.5708
-pan_joint_upper: 1.5708
-tilt_joint_lower: -1.5708
-tilt_joint_upper: 1.5708
+# Motor IDs, step-centering, and joint limits are not here - they're physical-calibration
+# constants for this mechanism, baked directly into pantilt.joints.xacro's macro defaults
+# (single source of truth), the same way so101.control.xacro/so100.control.xacro in
+# so_arm_ros2 hardcode motor IDs/joint limits rather than sourcing them from an external
+# launch-time YAML.
