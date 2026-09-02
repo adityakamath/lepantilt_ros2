@@ -43,6 +43,9 @@
       <param name="max_velocity_steps">${sts3215_max_vel_steps}</param>
       <param name="max_velocity">${pantilt_max_velocity_rads}</param>
       <param name="position_center_steps">${shoulder_pan_center_steps}</param>
+      <param name="internal_max_vel">254</param>
+      <param name="internal_max_acc">254</param>
+      <param name="internal_acc_coeff">100</param>
       <command_interface name="position"/>
       <state_interface name="position"/>
       <state_interface name="velocity"/>
@@ -68,6 +71,9 @@
       <param name="max_velocity_steps">${sts3215_max_vel_steps}</param>
       <param name="max_velocity">${pantilt_max_velocity_rads}</param>
       <param name="position_center_steps">${tilt_center_steps}</param>
+      <param name="internal_max_vel">254</param>
+      <param name="internal_max_acc">254</param>
+      <param name="internal_acc_coeff">100</param>
       <command_interface name="position"/>
       <state_interface name="position"/>
       <state_interface name="velocity"/>
