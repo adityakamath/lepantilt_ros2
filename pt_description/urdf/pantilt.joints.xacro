@@ -16,6 +16,9 @@
       tilt_center_steps     — raw step value (0–4095) for tilt centre position
       sts3215_max_vel_steps — motor's max velocity in steps/s, model-dependent;
                                written per joint as max_velocity_steps
+      internal_max_vel      — EEPROM VMax cap (addr 84), written per joint
+      internal_max_acc      — EEPROM AMax cap (addr 85), written per joint
+      internal_acc_coeff    — EEPROM KAcc coefficient (addr 86), written per joint
   -->
   <xacro:macro name="pantilt_joints" params="
       shoulder_pan_motor_id:=1
@@ -27,6 +30,9 @@
       shoulder_pan_upper:=1.5708
       tilt_joint_lower:=-1.5708
       tilt_joint_upper:=1.5708
+      internal_max_vel:=254
+      internal_max_acc:=254
+      internal_acc_coeff:=100
       ros2_control_hardware_type:=real">
 
     <!-- 85% of hardware max — 15% safety margin; motor firmware handles profiling -->
@@ -43,9 +49,9 @@
       <param name="max_velocity_steps">${sts3215_max_vel_steps}</param>
       <param name="max_velocity">${pantilt_max_velocity_rads}</param>
       <param name="position_center_steps">${shoulder_pan_center_steps}</param>
-      <param name="internal_max_vel">254</param>
-      <param name="internal_max_acc">254</param>
-      <param name="internal_acc_coeff">100</param>
+      <param name="internal_max_vel">${internal_max_vel}</param>
+      <param name="internal_max_acc">${internal_max_acc}</param>
+      <param name="internal_acc_coeff">${internal_acc_coeff}</param>
       <command_interface name="position"/>
       <state_interface name="position"/>
       <state_interface name="velocity"/>
@@ -71,9 +77,9 @@
       <param name="max_velocity_steps">${sts3215_max_vel_steps}</param>
       <param name="max_velocity">${pantilt_max_velocity_rads}</param>
       <param name="position_center_steps">${tilt_center_steps}</param>
-      <param name="internal_max_vel">254</param>
-      <param name="internal_max_acc">254</param>
-      <param name="internal_acc_coeff">100</param>
+      <param name="internal_max_vel">${internal_max_vel}</param>
+      <param name="internal_max_acc">${internal_max_acc}</param>
+      <param name="internal_acc_coeff">${internal_acc_coeff}</param>
       <command_interface name="position"/>
       <state_interface name="position"/>
       <state_interface name="velocity"/>
